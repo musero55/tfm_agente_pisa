@@ -63,7 +63,7 @@ VARIABLES_MODELO = {
     'control: centro': ['composicion_social_centro', 'dotacion_centro'],
     'comprobación': ['deberes_en_u', 'SKIPPING', 'TARDYSD', 'escs_centro', 'escasez_centro'],
 }
-# Componentes del índice de compromiso, que se describen por edición
+# Componentes del índice de compromiso, que la tabla incluye para las comprobaciones del modelo
 COMPONENTES_COMPROMISO = ['tiempo_deberes_totales_diarios', 'deberes_en_u', 'SKIPPING', 'TARDYSD']
 
 
@@ -111,7 +111,7 @@ def paises_panel(ruta_intermedios: str, panel: str = 'común') -> list[str]:
     return sorted(ediciones_por_pais[ediciones_por_pais == len(ediciones)].index)
 
 
-def tabla_por_alumno(ruta_raw_base: str, ruta_intermedios: str, panel: str = 'común') -> pd.DataFrame:
+def tabla_por_alumno(ruta_raw_base: str, ruta_intermedios: str, panel: str = 'común', ediciones: list[int] | None = None) -> pd.DataFrame:
     """Una fila por alumno de las ediciones de un panel de `PANELES` cuyo centro tiene perfil (`perfil`, de
     `00_Pipeline_generacion_estratos`), solo de los países del panel (`paises_panel`). Columnas: `CLAVES_ALUMNO`,
     `year`, los pesos `W_FSTUWT` y `SENWT`, los valores plausibles de cada asignatura de `DOMINIOS`
@@ -120,8 +120,9 @@ def tabla_por_alumno(ruta_raw_base: str, ruta_intermedios: str, panel: str = 'co
     centro-edición (`centro`). `sexo_femenino` e `inmigrante` (primera o segunda generación, `IMMIG` 2 o 3) valen
     1 o 0. El índice de compromiso, su tercil y las horas de deberes son los del panel (vacíos en los alumnos sin
     alguno de los tres componentes). Los índices del centro (`construir_indices`) se calculan con los centros de
-    los países del panel."""
-    ediciones = PANELES[panel][1]
+    los países del panel. `ediciones` lee otras ediciones que las del panel (por defecto, las suyas): en las que el
+    panel no tiene índice, el índice, su tercil y las horas de deberes quedan vacíos."""
+    ediciones = ediciones or PANELES[panel][1]
     paises = paises_panel(ruta_intermedios, panel)
     tablas = []
     for edicion in ediciones:
