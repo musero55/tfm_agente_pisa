@@ -78,31 +78,53 @@ GRAFICOS_COMPROMISO = [
 ]
 
 GRAFICOS_RECURSOS_CENTRO = [
-    ("recursos_centro_cobertura", "01_recursos_centro_cobertura.png",
-     "Porcentaje de centros con dato de cada recurso del centro, por país y edición"),
-    ("recursos_centro_correlaciones", "01_recursos_centro_correlaciones.png",
-     "Correlaciones entre los recursos del centro dentro de cada país y edición"),
+
+    #No necesaria (No se visualiza bien)
+    # ("recursos_centro_cobertura", "01_recursos_centro_cobertura.png",
+    #  "Porcentaje de centros con dato de cada recurso del centro, por país y edición"),
+
+    #No necesaria (demasiado pequeña)
+    # ("recursos_centro_correlaciones", "01_recursos_centro_correlaciones.png",
+    #  "Correlaciones entre los recursos del centro dentro de cada país y edición"),
+    
+    #Check
     ("recursos_centro_evolucion_pais", "01_recursos_centro_evolucion_pais.png",
      "Media de cada recurso del centro (alumnos por profesor, tamaño de clase, ordenadores...) por país y edición"),
+
+    #Check
     ("recursos_centro_reparto_varianza", "01_recursos_centro_reparto_varianza.png",
      "En qué nivel varían los recursos del centro: entre países, ediciones, perfiles de centro, centros y alumnos"),
+
+     #No Necesaria (?)
     ("recursos_centro_perfiles", "01_recursos_centro_perfiles.png",
      "Media de cada índice de recursos del centro por perfil de centro y edición"),
+
+    #Check
     ("recursos_centro_correlaciones_alumno", "01_recursos_centro_correlaciones_alumno.png",
      "Correlación de los recursos del centro con la composición social, el origen social, los recursos de estudio, el compromiso y la nota del alumno"),
+
+    #No necesaria(? No la entiendo)
     ("recursos_centro_asociacion_nota", "01_recursos_centro_asociacion_nota.png",
      "Puntos de matemáticas asociados a cada recurso del centro, dentro de cada país y edición, con y sin controles"),
+
+     #Check
     ("recursos_centro_escasez_2012", "01_recursos_centro_escasez_2012.png",
      "Índices de escasez de recursos del centro en 2012 y por qué no se comparan entre ediciones"),
 ]
 
 GRAFICOS_VARIABLES_MODELO = [
-    ("universo_modelo", "01_variables_modelo_universo.png",
-     "Cobertura de los datos: alumnos con perfil de centro, con índice de compromiso y centros por perfil y edición"),
+
+    #No Usar, redundante con dos gráficas anteriores 
+    # ("universo_modelo", "01_variables_modelo_universo.png",
+    #  "Cobertura de los datos: alumnos con perfil de centro, con índice de compromiso y centros por perfil y edición"),
+
+    #Check
     ("variables_modelo_huecos", "01_variables_modelo_huecos.png",
      "Diferencia de nota entre los alumnos sin dato y con dato en cada variable del modelo, relativa a su país y edición"),
-    ("variables_modelo_huecos_perfil", "01_variables_modelo_huecos_perfil.png",
-     "Porcentaje de alumnos sin dato y su diferencia de nota, por perfil de centro y edición"),
+     
+     #No Usar, poco clara
+    # ("variables_modelo_huecos_perfil", "01_variables_modelo_huecos_perfil.png",
+    #  "Porcentaje de alumnos sin dato y su diferencia de nota, por perfil de centro y edición"),
 ]
 
 # 33 países: descomentar solo si el agente pasa a cubrir también los países fuera del panel
@@ -131,16 +153,3 @@ GRAFICOS_RECURSOS_ALUMNO = [
     #  "Funcionamiento diferencial de cada ítem de recursos de estudio por país"),
 ]
 
-# 33 países, bloque exploratorio previo a elegir el tema del TFM
-GRAFICOS_EQUIDAD = [
-    # ("desigualdad_y_rendimiento", "01_desigualdad_y_rendimiento.png",
-    #  "Relación del Gini, la dispersión del ESCS y la segregación entre centros con la nota media de matemáticas del país"),
-    # ("correlacion_medidas_sociales", "01_correlacion_medidas_sociales.png",
-    #  "Correlación entre las tres medidas de desigualdad social"),
-    # ("brecha_recursos_centros", "01_brecha_recursos_entre_centros.png",
-    #  "Brecha de recursos entre el 25 % de centros más desfavorecidos y el 25 % más favorecido, por país (PISA 2022)"),
-    # ("ranking_desigualdad_nota", "01_ranking_correlacion_variables_sociales_recursos.png",
-    #  "Correlación de cada medida de desigualdad social y de recursos entre centros con la nota de matemáticas"),
-    # ("recursos_centro_nota", "01_recursos_centro_y_nota.png",
-    #  "Correlación del nivel socioeconómico y los recursos del centro con su nota media de matemáticas"),
-]

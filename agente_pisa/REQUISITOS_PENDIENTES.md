@@ -39,8 +39,8 @@ Una regresión y un XGBoost por edición, estimados con cada valor plausible. El
 - [ ] Imágenes definitivas: cuando estén en `reports/`, actualizar la lista `GRAFICOS_CONTEXTO` de `preparar_artefactos.py` (fichero y descripción; el agente elige la imagen leyendo la descripción).
 - [ ] Marco teórico: completar el bloque marcado en `system_prompt.md` cuando el informe esté cerrado (unos 300 a 500 tokens).
 - [ ] Evaluador: los casos de `evaluador/reference_test.py` son del bloque exploratorio de 33 países, ahora en `anexo/`, y piden herramientas que ya no existen. Hay que rehacerlos con preguntas de la línea actual: `estratos fijos`, compromiso, recursos, países del panel y el aviso de 2018.
-- [ ] Despliegue en Streamlit Cloud: subir `agente_pisa/artefactos/`, configurar la app y el secreto `GROQ_API_KEY` (pasos en `README_ARQUITECTURA.md`, sección 8).
+- [x] Despliegue en Streamlit Cloud: subir `agente_pisa/artefactos/`, configurar la app y el secreto `GROQ_API_KEY` (pasos en `README_ARQUITECTURA.md`, sección 8).
 
 ## Notas sobre el repositorio
 
-- [ ] `data/processed/README.md` dice que el agente usa `dataset_pisa_estrato_llm.pkl`. Ya no es así: ahora lee `tabla_modelo_alumno.parquet` mediante `preparar_artefactos.py`. Ese `.pkl` puede pasar a `anexo/modelo_por_estrato/datos/`.
+- [x] `data/processed/README.md` dice que el agente usa `dataset_pisa_estrato_llm.pkl`. Ya no es así: ahora lee `tabla_modelo_alumno.parquet` mediante `preparar_artefactos.py`. Ese `.pkl` puede pasar a `anexo/modelo_por_estrato/datos/`.

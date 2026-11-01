@@ -3,7 +3,7 @@
 # necesita xgboost; shap se usa solo para dibujar el waterfall.
 streamlit==1.65.0
 pandas==3.0.3
-pyarrow==17.0.0
+pyarrow==22.0.0
 numpy==2.1.3
 shap==0.51.0
 matplotlib==3.10.0

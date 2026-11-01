@@ -1,5 +1,19 @@
 id,tipo,ruta,descripcion
-recursos_alumno_nota,contexto,img/01_recursos_alumno_asociacion_nota.png,"Asociación de los recursos del hogar (recursos de estudio, riqueza y libros) con la nota, dentro de cada país y edición"
-recursos_alumno_paises,contexto,img/01_recursos_alumno_evolucion_pais.png,"Media de recursos de estudio, riqueza del hogar y libros por país y edición"
-recursos_centro_nota,contexto,img/01_recursos_centro_y_nota.png,Correlación del nivel socioeconómico y los recursos del centro con su nota media de matemáticas
-universo_modelo,contexto,img/01_variables_modelo_universo.png,"Cobertura de los datos: alumnos con perfil de centro, con índice de compromiso y centros por perfil y edición"
+estratos_tamano_centros,contexto,img/00_estratos_tamano_centros_titularidad_ubicacion.png,"Ejemplo de distribución del tamaño de los centros españoles por titularidad y ubicación, con los cortes pequeño / mediano / macro"
+estratos_colegios_edicion,contexto,img/00_estratos_colegios_por_estrato_edicion.png,Número de colegios en cada estrato fijo (perfil de centro) y su comparación entre ediciones 2012-2022
+compromiso_distribucion_2022,contexto,img/01_compromiso_distribucion_indicadores_2022.png,"Distribución de los tres indicadores del índice de compromiso (horas de deberes, absentismo e impuntualidad) en PISA 2022"
+compromiso_por_estrato_2022,contexto,img/01_compromiso_indicadores_por_estrato_2022.png,"Horas de deberes, absentismo e impuntualidad por estrato de titularidad y ubicación (PISA 2022)"
+compromiso_indicadores_2012,contexto,img/01_compromiso_indicadores_2012.png,"Distribución de horas de deberes, absentismo e impuntualidad en PISA 2012"
+compromiso_indicadores_2015,contexto,img/01_compromiso_indicadores_2015.png,"Distribución de horas de deberes, absentismo e impuntualidad en PISA 2015"
+compromiso_indicadores_2018,contexto,img/01_compromiso_indicadores_2018.png,"Distribución de horas de deberes, absentismo e impuntualidad en PISA 2018 (edición con huecos en deberes)"
+compromiso_disponibilidad,contexto,img/01_compromiso_disponibilidad_pais_edicion.png,"Disponibilidad de cada variable del índice de compromiso por país y edición, y países que forman el panel común"
+compromiso_titularidad_ubicacion,contexto,img/01_compromiso_indice_por_titularidad_ubicacion_2022.png,Índice de compromiso y competencia por titularidad y ubicación del centro (PISA 2022)
+compromiso_espana_vs_panel,contexto,img/01_compromiso_indice_alumno_espana_vs_panel_2022.png,Reparto de alumnos por nivel del índice de compromiso y competencia: España frente al resto del panel (PISA 2022)
+compromiso_evolucion,contexto,img/01_compromiso_evolucion_indice.png,"Evolución del índice de compromiso y competencia 2012-2022, global y por titularidad, en el panel común de países"
+recursos_centro_evolucion_pais,contexto,img/01_recursos_centro_evolucion_pais.png,"Media de cada recurso del centro (alumnos por profesor, tamaño de clase, ordenadores...) por país y edición"
+recursos_centro_reparto_varianza,contexto,img/01_recursos_centro_reparto_varianza.png,"En qué nivel varían los recursos del centro: entre países, ediciones, perfiles de centro, centros y alumnos"
+recursos_centro_perfiles,contexto,img/01_recursos_centro_perfiles.png,Media de cada índice de recursos del centro por perfil de centro y edición
+recursos_centro_correlaciones_alumno,contexto,img/01_recursos_centro_correlaciones_alumno.png,"Correlación de los recursos del centro con la composición social, el origen social, los recursos de estudio, el compromiso y la nota del alumno"
+recursos_centro_asociacion_nota,contexto,img/01_recursos_centro_asociacion_nota.png,"Puntos de matemáticas asociados a cada recurso del centro, dentro de cada país y edición, con y sin controles"
+recursos_centro_escasez_2012,contexto,img/01_recursos_centro_escasez_2012.png,Índices de escasez de recursos del centro en 2012 y por qué no se comparan entre ediciones
+variables_modelo_huecos,contexto,img/01_variables_modelo_huecos.png,"Diferencia de nota entre los alumnos sin dato y con dato en cada variable del modelo, relativa a su país y edición"
