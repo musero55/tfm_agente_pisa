@@ -15,12 +15,12 @@ Una regresión y un XGBoost por edición, estimados con cada valor plausible. El
 
 **Entrega del modelado** (`ENTREGA_MODELOS.md`)
 - [ ] `models/shap_alumnos.parquet`: SHAP del XGBoost de cada alumno, medio entre los valores plausibles de su edición, con valor base y predicción.
-- [ ] `models/coeficientes_regresion.csv`: todas las regresiones (por edición, por estrato y de comprobación) en una tabla, combinadas con las reglas de Rubin.
+- [ ] `models/coeficientes_regresion.csv`: la regresión global y la regresión por perfil (variables × indicador de cada perfil) en una tabla, combinadas con las reglas de Rubin.
 - [ ] `models/metricas_modelos.csv`: R², RMSE y MAE por modelo y edición.
 - [ ] Ejecutar `preparar_artefactos.py`: comprueba el formato (y que valor base + SHAP = predicción), se queda con los alumnos del agente y copia las tres tablas a `artefactos/`. `datos.py` ya las carga.
 
 **Herramientas nuevas** (cada una se activa con su tabla: `datos.regresion_disponible()`, `shap_disponible()`, `metricas_disponibles()`)
-- [ ] `get_regression_weights(variable, edicion, estrato, especificacion)`: peso de cada variable y su significación, por edición y por estrato. Por defecto `estrato=todos` y `especificacion=principal`; las comprobaciones solo si se pregunta por la robustez. Avisar si la regresión del estrato tiene pocos centros. Si los coeficientes están tipificados, `data/processed/parametros_escala.parquet` permite traducirlos a unidades originales («por cada recurso de estudio más...»).
+- [ ] `get_regression_weights(variable, edicion, estrato)`: peso de cada variable y su significación, por edición. Sin estrato, la regresión global; con estrato, la regresión por perfil. Avisar si el perfil tiene pocos centros. Si los coeficientes están tipificados, `data/processed/parametros_escala.parquet` permite traducirlos a unidades originales («por cada recurso de estudio más...»).
 - [ ] Simulación lineal con la regresión: «con 2 recursos más, la nota cambia 2 × coeficiente».
 - [ ] Explicación de un perfil: waterfall con la media de los SHAP de los alumnos reales de ese perfil (o con coeficiente × distancia a la media). `graficos.guardar_waterfall` ya lo dibuja.
 - [ ] Patrones del XGBoost agrupando la tabla de SHAP: importancia por `estratos fijos`, origen social, nivel de compromiso o de recursos; interacciones y no linealidades.

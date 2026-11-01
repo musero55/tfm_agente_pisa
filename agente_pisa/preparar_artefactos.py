@@ -95,8 +95,8 @@ def copiar_graficos() -> pd.DataFrame:
 CLAVES_ALUMNO = ["CNT", "year", "CNTSCHID", "CNTSTUID"]
 TIPOS_CLAVES = {"CNT": str, "year": "int64", "CNTSCHID": "int64", "CNTSTUID": "int64"}   # para unir sin fallos de tipo
 COLUMNAS_SHAP = CLAVES_ALUMNO + ["valor_base", "prediccion"]
-COLUMNAS_COEFICIENTES = ["edicion", "estrato", "especificacion", "tipo", "variable", "perfil", "coeficiente",
-                         "error_tipico", "ic_inf", "ic_sup", "p_valor", "unidad", "n_alumnos", "n_centros"]
+COLUMNAS_COEFICIENTES = ["edicion", "regresion", "estrato", "variable", "coeficiente", "error_tipico", "ic_inf", "ic_sup",
+                         "p_valor", "unidad", "n_alumnos", "n_centros"]
 COLUMNAS_METRICAS = ["edicion", "modelo", "conjunto", "r2", "rmse", "mae", "n_alumnos"]
 
 
