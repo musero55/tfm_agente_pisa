@@ -24,6 +24,7 @@ agente_pisa/
 ├── config.py                 Rutas, países, avisos, modelos de Groq y etiquetas legibles
 ├── preparar_artefactos.py    Genera artefactos/ a partir de data/ y reports/ (se ejecuta en local)
 ├── system_prompt.md          Instrucciones del agente (en inglés, respuestas en español)
+├── metodologia/              Notas de metodología en .md, una por tema (cómo se construye cada índice...)
 ├── requirements.txt          Dependencias mínimas para Streamlit Cloud
 ├── agente_pisa.ipynb         Banco de pruebas manuales y Gradio
 ├── evaluador/                Batería de casos de referencia y juez LLM (casos por rehacer)
@@ -73,7 +74,8 @@ agente.py  (LangGraph: asistente <-> herramientas, con system_prompt.md)
 💡 **Protección de tokens en la capa gratuita de Groq.**
 - Ventana deslizante de 4 mensajes más el System Prompt, empezando siempre en una pregunta del usuario y sin separar una llamada a herramienta de su resultado.
 - Salidas de herramientas en JSON compacto con etiquetas legibles: entre 40 y 230 tokens.
-- Solo 3 herramientas, cuyos esquemas ocupan unos 950 tokens.
+- Solo 4 herramientas, cuyos esquemas ocupan unos 1.070 tokens.
+- La metodología (cómo se construye cada índice, marco teórico) no va en el System Prompt: la devuelve `get_methodology` solo cuando se pregunta por ella.
 - Las gráficas de las respuestas las dibuja la app a partir del JSON de la herramienta, sin pedírselas al LLM.
 - La exploración manual y la galería se calculan con Python puro y consumen 0 tokens.
 
@@ -90,10 +92,11 @@ agente.py  (LangGraph: asistente <-> herramientas, con system_prompt.md)
 | a) Estadísticas descriptivas en vivo | `get_math_stats` | Media ponderada de la nota (o de otra variable del alumno) para cualquier subgrupo: país, edición, `estratos fijos`, nivel de compromiso, recursos de estudio, sexo u origen. Con `group_by` compara grupos o hace el ranking de países. Admite términos genéricos |
 | | `calculate_correlation` | Correlación ponderada entre dos variables del alumno: la media de las correlaciones dentro de cada país y edición (como en el EDA) y la global |
 | b) Contexto estático | `get_context_chart` | Devuelve un PNG del catálogo según una palabra clave |
+| | `get_methodology` | Devuelve la nota de metodología de un tema (un `.md` de `metodologia/`): cómo se construye un índice, qué preguntas usa, cómo se igualan las ediciones y qué se hace con los huecos. Los temas salen de los nombres de los ficheros, así que añadir un `.md` basta |
 | c) Modelos (etapa 2) | Pendiente | Regresión: peso de cada variable y simulación lineal. XGBoost: patrones por estrato e interacciones a partir de los SHAP por alumno, y waterfall de un perfil |
 
 Los niveles descriptivos usan cortes fijos, iguales en todas las ediciones:
-- **Compromiso:** bajo por debajo de −0,5 desviaciones típicas, medio entre −0,5 y 0,5, alto por encima de 0,5.
+- **Compromiso:** bajo por debajo de −1 desviación típica, medio entre −1 y +1, alto por encima de +1 (los umbrales del EDA del índice).
 - **Recursos de estudio:** hasta 4, 5 de 6 o los 6.
 
 ## 6. Interfaz

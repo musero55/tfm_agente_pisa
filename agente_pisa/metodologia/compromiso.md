@@ -1,0 +1,74 @@
+# Índice de compromiso y competencia
+
+## Qué mide
+El compromiso del alumno con el colegio a través de tres comportamientos que declara: el tiempo diario que dedica
+a los deberes, si falta a clase y si llega tarde. Es una de las dos variables de interés del estudio. Un valor
+más alto indica más compromiso.
+
+## Por qué estas tres variables
+- Se eligen de antemano por un criterio de comparabilidad, no con un modelo que ordene variables por importancia.
+- Se descartan las escalas de actitudes (motivación, ansiedad...), porque PISA las mide con preguntas distintas en
+  cada edición y no se pueden comparar en el tiempo.
+- Se usan conductas concretas (horas, faltas y retrasos) que se preguntan de forma equivalente en 2012, 2015, 2018
+  y 2022.
+
+## Los tres componentes
+- **Absentismo:** si el alumno ha faltado un día entero o a clases sueltas en las dos últimas semanas (sí/no).
+- **Impuntualidad:** cuántas veces ha llegado tarde en las dos últimas semanas: ninguna, 1 o 2 veces, o 3 o más.
+  En 2022 la OCDE publica estos dos indicadores ya calculados. Para 2012, 2015 y 2018 se construyen con la misma
+  regla a partir de las mismas preguntas, y se comprobó que la regla reproduce sin ninguna diferencia los valores
+  oficiales de 2022.
+- **Tiempo de deberes:** horas diarias, con un máximo de 4,5 horas. La pregunta cambia en cada edición, así que se
+  iguala así:
+  - 2012: suma de las horas semanales de deberes (solo, guiados y con ayuda de los padres) dividida entre 5 días.
+  - 2015: suma de las horas semanales de las tres materias troncales (matemáticas, ciencias y lengua) entre 5 días.
+  - 2018: tiempo de estudio después del colegio, de un cuestionario opcional que solo respondieron algunos países.
+  - 2022: tramos de tiempo diario convertidos al punto medio de cada tramo.
+
+## Cómo se combinan
+1. **Deberes en U invertida.** Más horas no es siempre mejor: la nota sube hasta unas 1,5 horas diarias y después
+   baja, porque quien necesita muchas horas suele ser el alumno con más dificultades. Por eso los alumnos se dividen
+   en tres grupos iguales (terciles) según sus horas, dentro de cada edición: el grupo central puntúa 1 y los
+   grupos de pocas y de muchas horas puntúan 0.
+2. **Mismo sentido.** El absentismo y la impuntualidad se invierten para que, en los tres componentes, más sea mejor.
+3. **Pesos iguales.** Cada componente se estandariza y el índice es la media de los tres, con un peso de un tercio
+   para cada uno.
+4. **Escala común.** El resultado se lleva a media 0 y desviación típica 1 con los alumnos de las cuatro ediciones
+   juntos, dando el mismo peso a cada país y edición. Así el índice se mide con la misma regla en toda la década y
+   un mismo valor significa lo mismo en 2012 y en 2022.
+
+## Por qué no se usó un análisis de componentes principales
+- También se calculó un índice con componentes principales (que reparte los pesos según lo que las variables tienen
+  en común), pero se descartó.
+- Los deberes apenas se relacionan con la asistencia, así que ese método les daba un peso residual (menos del 8 %) y
+  el índice acababa siendo, en la práctica, solo de asistencia.
+- Además, ese método solo recoge relaciones lineales y no puede reflejar la U invertida de los deberes.
+
+## Quién tiene el índice
+- Se construye sobre el panel de 12 países que tienen datos de las tres variables en las cuatro ediciones (AUS,
+  DNK, ESP, GBR, GRC, HUN, ISL, ITA, KOR, POL, SVK y SVN). Fuera del panel, el cuello de botella es 2018: muchos
+  países no pasaron el cuestionario opcional de deberes.
+- Solo tienen índice los alumnos que respondieron a los tres componentes. Faltar a uno deja el índice vacío.
+- En 2018 solo el 64 % de los alumnos tiene dato de deberes (el 28 % en Reino Unido), así que esa edición debe
+  leerse con cautela.
+
+## Niveles
+- El índice solo toma 12 valores, uno por cada combinación de los tres componentes, y se divide en tres niveles:
+  - «Alto», por encima de +1 desviación típica (15 % de los alumnos del modelo): solo el perfil completo, con horas
+    de deberes en el grupo central, sin faltas y puntual.
+  - «Bajo», por debajo de −1 desviación típica (18 %): la zona de alarma para revisar al alumno. Solo se llega a ella
+    cuando fallan a la vez los deberes y la asistencia: deberes fuera del grupo central y, además, retrasos
+    frecuentes, o faltas junto con algún retraso.
+  - «Medio», entre −1 y +1 (68 %): el resto. Un único fallo aislado no basta para salir de este nivel.
+- El índice no distingue entre el alumno que apenas hace deberes y el que necesita demasiadas horas: los dos
+  puntúan igual en ese componente.
+
+## Limitaciones
+- La pregunta de deberes cambia entre ediciones. Dividir en terciles dentro de cada edición lo suaviza, pero no del
+  todo: como las respuestas tienen pocos valores distintos, el grupo central no siempre reúne a un tercio de los
+  alumnos (del 36 % en 2012 al 23 % en 2022).
+- Por eso la bajada de la media del índice desde 2015 se debe sobre todo a cómo se pregunta por los deberes, no a
+  un cambio real de comportamiento. La evolución en el tiempo debe leerse sobre todo a través de la asistencia. La
+  relación con la nota dentro de cada edición no se ve afectada.
+- El tipo de centro explica muy poco del índice (menos del 1 % de su variación en 2022): el compromiso es sobre
+  todo una característica individual del alumno.

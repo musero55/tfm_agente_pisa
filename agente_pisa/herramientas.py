@@ -3,8 +3,8 @@ Herramientas (Tool Calling) del agente PISA, organizadas en tres vías:
 
   a) Estadísticas descriptivas en vivo (Pandas sobre los alumnos del modelo, salida JSON compacta):
      get_math_stats, calculate_correlation
-  b) Contexto estático (PNG pre-generados, sin cálculo):
-     get_context_chart
+  b) Contexto estático (sin cálculo): PNG pre-generados y notas de metodología (metodologia/*.md):
+     get_context_chart, get_methodology
   c) Resultados de los modelos (etapa 2, pendiente del modelado), sin cargar ningún modelo: coeficientes de la
      regresión (peso de cada variable y simulación lineal), SHAP del XGBoost por alumno (interacciones y
      diferencias por estrato) y métricas. Cada una se añadirá a `pisa_tools` cuando exista su tabla (datos.regresion_disponible(), etc.).
@@ -26,7 +26,8 @@ import pandas as pd
 from langchain_core.tools import tool
 
 from config import (
-    AVISO_2018_CORTO, AVISO_POCO_REPRESENTATIVO, NOMBRES_PAISES, PAISES_PANEL, PISA_YEARS, VARIABLES_NUMERICAS, etiqueta,
+    AVISO_2018_CORTO, AVISO_POCO_REPRESENTATIVO, DIR_METODOLOGIA, NOMBRES_PAISES, PAISES_PANEL, PISA_YEARS,
+    VARIABLES_NUMERICAS, etiqueta,
 )
 from datos import cargar_alumnos, cargar_catalogo_graficos
 
@@ -329,6 +330,23 @@ def get_context_chart(keyword: str = "") -> str:
         return _error(f"Gráfico de contexto: {e}")
 
 
+# Temas de metodología: uno por fichero de metodologia/ (añadir un .md basta para que el agente lo vea)
+TEMAS_METODOLOGIA = tuple(sorted(ruta.stem for ruta in DIR_METODOLOGIA.glob("*.md")))
+
+
+@tool
+def get_methodology(topic: Literal[TEMAS_METODOLOGIA]) -> str:
+    """
+    Returns the project's methodology note on a topic: how an index, variable or school profile was built, which
+    survey items it uses, how editions were harmonised, how missing answers are handled, why these countries and
+    students, and the study's limitations. Call it for "how" or "why" questions about the study design.
+    """
+    try:
+        return _json({"tema": topic, "texto": (DIR_METODOLOGIA / f"{topic}.md").read_text(encoding="utf-8")})
+    except Exception as e:
+        return _error(f"Metodología: {e}")
+
+
 # ==============================================================================
 # LISTA DE HERRAMIENTAS EXPORTADAS
 # ==============================================================================
@@ -336,6 +354,6 @@ pisa_tools = [
     # a) Estadísticas descriptivas en vivo
     get_math_stats, calculate_correlation,
     # b) Contexto estático
-    get_context_chart,
+    get_context_chart, get_methodology,
     # c) Simulación con los modelos: se añadirá en la etapa 2 (regresión + XGBoost)
 ]

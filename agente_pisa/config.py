@@ -19,6 +19,8 @@ DIR_IMAGENES_MACRO = DIR_ARTEFACTOS / "img"
 
 RUTA_ALUMNOS = DIR_ARTEFACTOS / "alumnos_modelo.parquet"          # alumnos en_modelo, legibles (sin codificar)
 RUTA_CATALOGO_GRAFICOS = DIR_ARTEFACTOS / "catalogo_graficos.csv"
+# Metodología (cómo se construye cada índice, marco teórico...): un .md por tema, escrito a mano
+DIR_METODOLOGIA = DIR_AGENTE / "metodologia"
 # Etapa 2 (pendiente del modelado): resultados de la regresión y del XGBoost, sin los modelos
 RUTA_SHAP = DIR_ARTEFACTOS / "shap_alumnos.parquet"                # SHAP de cada alumno, medio entre valores plausibles
 RUTA_COEFICIENTES = DIR_ARTEFACTOS / "coeficientes_regresion.csv"  # regresión por edición, combinada con Rubin
@@ -62,7 +64,7 @@ TAMANOS = {"PEQ": "Pequeño", "MED": "Mediano", "MACRO": "Grande"}
 
 # Niveles descriptivos de las variables de interés (cortes fijos, iguales en todas las ediciones)
 #TODO Cortes compromiso no seria hasta -1 , 1, infinito ?? Que es la desviación tipica del indice
-CORTES_COMPROMISO = ([-float("inf"), -0.5, 0.5, float("inf")], ["Bajo", "Medio", "Alto"])     # en DT del índice
+CORTES_COMPROMISO = ([-float("inf"), -1, 1, float("inf")], ["Bajo", "Medio", "Alto"])     # en DT del índice, como en el EDA
 CORTES_RECURSOS = ([-float("inf"), 4.5, 5.5, float("inf")], ["Hasta 4", "5 de 6", "Los 6"])    # recursos de estudio
 
 # Dimensiones por las que se puede filtrar o agrupar (columna -> nombre legible)
