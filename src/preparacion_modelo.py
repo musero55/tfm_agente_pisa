@@ -16,8 +16,8 @@ mantienen separados:
     * `matriz_xgboost`: las mismas variables en sus unidades originales y con sus huecos, que XGBoost trata solo.
     * `DESCRIPCION_COLUMNAS` / `diccionario_columnas`: qué es cada columna de la tabla guardada y en qué unidades.
 
-Los perfiles de centro son los de `00_Pipeline_generacion_estratos`; el umbral de centros, el de
-`01_EDA_variables_modelo`.
+Los perfiles de centro son los de `00_Pipeline_generacion_estratos`; el umbral de centros (`MINIMO_CENTROS`) se
+aplica y se describe en `02_preparacion_modelo`.
 """
 
 from __future__ import annotations
