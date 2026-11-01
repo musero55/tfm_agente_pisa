@@ -167,3 +167,14 @@ caso_inversion_global_esfuerzo_y_factores_clave = {
         ]
     }
 }
+
+## ======================= Batería completa que ejecuta evaluator.py ========================== ##
+CASOS_TEST_PISA = [
+    caso_equidad_espana_2022,
+    caso_impacto_desigualdad_rendimiento,
+    caso_impacto_macroeconomia_rendimiento,
+    caso_perfiles_paises_mercado_laboral,
+    caso_presupuesto_renta_y_simulacion_espana,
+    caso_estabilidad_temporal_presupuesto,
+    caso_inversion_global_esfuerzo_y_factores_clave,
+]

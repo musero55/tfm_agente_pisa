@@ -18,7 +18,10 @@ from langchain_groq import ChatGroq
 from pathlib import Path
 
 
-from reference_test import CASOS_TEST_PISA
+try:
+    from .reference_test import CASOS_TEST_PISA   # import evaluador.evaluator (notebook)
+except ImportError:
+    from reference_test import CASOS_TEST_PISA    # ejecución desde la carpeta evaluador
 
 
 # Generamos un esquema estrucurado con pydantic de las respuestas que el juez debe mostrar a la salida de tal forma que se evita generar texto plano desestructurado
@@ -134,9 +137,9 @@ def _evaluar_caso_estudio(agente, caso: Dict[str, Any], modelo_juez: str = "open
     return {
         "ID": test_id,
         "Categoría": caso.get("categoria", "General"),
-        "Tools OK": "✅" if tools_ok else "❌",
-        "Fidelidad OK": "✅" if veredicto.sin_alucinaciones else "❌",
-        "Estilo Limpio": "✅" if estilo_limpio else "⚠️ (Tecnicismos)",
+        "Tools OK": "OK" if tools_ok else "FALLO",
+        "Fidelidad OK": "OK" if veredicto.sin_alucinaciones else "FALLO",
+        "Estilo Limpio": "OK" if estilo_limpio else "AVISO (Tecnicismos)",
         "Calidad (1-5)": veredicto.puntuacion_calidad,
         "Completitud (1-5)": veredicto.completitud,
         "Tiempo (s)": tiempo_seg,
@@ -154,12 +157,12 @@ def ejecutar_bateria_evaluacion(agente,  casos: List[Dict[str, Any]] = CASOS_TES
             res = _evaluar_caso_estudio(agente, caso, modelo_juez=modelo_juez)
             resultados.append(res)
         except Exception as e:
-            print(f"❌ Error ejecutando {caso['id']}: {e}")
+            print(f"Error ejecutando {caso['id']}: {e}")
             resultados.append({
                 "ID": caso["id"],
                 "Categoría": caso.get("categoria", "General"),
-                "Tools OK": "💥 Error",
-                "Fidelidad OK": "💥 Error",
+                "Tools OK": "ERROR",
+                "Fidelidad OK": "ERROR",
                 "Estilo Limpio": "-",
                 "Calidad (1-5)": 0,
                 "Completitud (1-5)": 0,
@@ -171,6 +174,6 @@ def ejecutar_bateria_evaluacion(agente,  casos: List[Dict[str, Any]] = CASOS_TES
             })
             
     df_resultados = pd.DataFrame(resultados)
-    print("\n✅ Evaluación finalizada.")
+    print("\nEvaluación finalizada.")
     return df_resultados
 

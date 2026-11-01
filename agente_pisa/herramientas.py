@@ -1,934 +1,341 @@
-import os
-import sys
-import time
-import joblib
-import matplotlib
-import matplotlib.pyplot as plt
+"""
+Herramientas (Tool Calling) del agente PISA, organizadas en tres vías:
+
+  a) Estadísticas descriptivas en vivo (Pandas sobre los alumnos del modelo, salida JSON compacta):
+     get_math_stats, calculate_correlation
+  b) Contexto estático (PNG pre-generados, sin cálculo):
+     get_context_chart
+  c) Resultados de los modelos (etapa 2, pendiente del modelado), sin cargar ningún modelo: coeficientes de la
+     regresión (peso de cada variable y simulación lineal), SHAP del XGBoost por alumno (interacciones y
+     diferencias por estrato) y métricas. Cada una se añadirá a `pisa_tools` cuando exista su tabla (datos.regresion_disponible(), etc.).
+
+Todas las cifras son de matemáticas, la nota del alumno en este TFM, en los 12 países del panel común.
+Las medias se ponderan con SENWT: dentro de un país y edición equivale al peso del alumno, y en el panel
+da el mismo peso a cada país y edición.
+
+Las herramientas que muestran una imagen devuelven su referencia en la clave "imagen" del JSON;
+la app la recoge de los ToolMessage, por lo que el LLM no necesita repetirla en su respuesta.
+"""
+import difflib
+import json
+import unicodedata
+from typing import Literal, Optional, Union
+
 import numpy as np
 import pandas as pd
-import seaborn as sns
-from pathlib import Path
-import shap
-from langchain.tools import tool
-import gradio as gr
-from adjustText import adjust_text
-import urllib.parse
-import difflib
+from langchain_core.tools import tool
 
-import time
-from typing import Literal, Union
-
-matplotlib.use('Agg')
-
+from config import (
+    AVISO_2018_CORTO, AVISO_POCO_REPRESENTATIVO, NOMBRES_PAISES, PAISES_PANEL, PISA_YEARS, VARIABLES_NUMERICAS, etiqueta,
+)
+from datos import cargar_alumnos, cargar_catalogo_graficos
 
 # ==========================================================
-#  CARGA DE DATOS
+#  NORMALIZADORES Y UTILIDADES
 # ==========================================================
 
-try:
-    # En un script, usa la carpeta donde está este archivo.
-    BASE_DIR = Path(__file__).resolve().parent
-except NameError:
-    # En un notebook, __file__ no está definido.
-    BASE_DIR = Path.cwd().resolve()
+MINIMO_ALUMNOS = 30   # por debajo, el grupo se marca como "pocos datos"
 
-# Si el notebook se ejecuta desde una subcarpeta, busca la carpeta del proyecto
-# en los directorios superiores.
-if not (BASE_DIR / "data_llm").is_dir():
-    BASE_DIR = next(
-        (parent for parent in BASE_DIR.parents if (parent / "data_llm").is_dir()),
-        BASE_DIR,
-    )
-DIR_IMAGENES = BASE_DIR / "temp_plots"
-DIR_IMAGENES.mkdir(parents=True, exist_ok=True)
-
-#Creamos las rutas de los modelos
-MODELS_PATHS = {
-    "math": BASE_DIR / "data_llm" / "modelo_xgb_math_opt.pkl",
-    "read": BASE_DIR / "data_llm" / "modelo_xgb_read_opt.pkl",
-    "scie": BASE_DIR / "data_llm" / "modelo_xgb_scie_opt.pkl"
+# Sinónimos para que el usuario pueda preguntar de forma genérica ("privados", "rurales", "chicas"...)
+SINONIMOS = {
+    "tipo_centro": {
+        "Público": ["publico", "publicos", "public", "estatal", "pub"],
+        "Concertado": ["concertado", "concertados", "charter", "con", "privado concertado"],
+        "Privado": ["privado", "privados", "private", "pri", "privado independiente"],
+    },
+    "ubicacion": {
+        "Urbano": ["urbano", "urbanos", "urbana", "ciudad", "urban", "urb"],
+        "Rural": ["rural", "rurales", "pueblo", "rur"],
+    },
+    "tamano": {
+        "Pequeño": ["pequeno", "pequenos", "pequena", "small", "peq", "escuela pequena"],
+        "Mediano": ["mediano", "medianos", "mediana", "medium", "med", "instituto mediano"],
+        "Grande": ["grande", "grandes", "large", "macro", "macroinstituto", "macro-instituto"],
+    },
+    "nivel_compromiso": {
+        "Bajo": ["bajo", "baja", "low", "poco"],
+        "Medio": ["medio", "media", "medium", "intermedio"],
+        "Alto": ["alto", "alta", "high", "mucho"],
+    },
+    "nivel_recursos": {
+        "Hasta 4": ["hasta 4", "bajo", "bajos", "pocos", "low", "4"],
+        "5 de 6": ["5 de 6", "medio", "medios", "5", "medium"],
+        "Los 6": ["los 6", "alto", "altos", "todos", "completos", "6", "high", "all"],
+    },
+    "sexo": {
+        "Chica": ["chica", "chicas", "mujer", "mujeres", "femenino", "girl", "girls", "female"],
+        "Chico": ["chico", "chicos", "hombre", "hombres", "masculino", "boy", "boys", "male"],
+    },
+    "origen": {
+        "Nativo": ["nativo", "nativos", "native", "autoctono"],
+        "Inmigrante": ["inmigrante", "inmigrantes", "immigrant", "extranjero", "extranjeros"],
+    },
 }
 
-SHAP_PATHS = {
-    "math": BASE_DIR / "data_llm" / "shap_explainer_math.pkl",
-    "read": BASE_DIR / "data_llm" / "shap_explainer_read.pkl",
-    "scie": BASE_DIR / "data_llm" / "shap_explainer_scie.pkl"
+# Nombres de los parámetros de la herramienta -> columna de alumnos_modelo
+GRUPOS = {
+    "tipo_centro": "tipo_centro", "ubicacion": "ubicacion", "tamano": "tamano", "compromiso": "nivel_compromiso",
+    "recursos": "nivel_recursos", "sexo": "sexo", "origen": "origen", "pais": "CNT", "edicion": "year",
 }
 
-
-df_estratos = joblib.load(BASE_DIR/'data_llm'/'dataset_pisa_estrato_llm.pkl')
-df_paises= joblib.load(BASE_DIR/'data_llm'/'dataset_pisa_cnt_llm.pkl')
-columnas_del_modelo= joblib.load(BASE_DIR/'data_llm'/'columnas_modelo.pkl')
-
-
-#Carga los modelos en memoria
-MODELS = {k: joblib.load(v) for k, v in MODELS_PATHS.items() if v.exists()}
-EXPLAINERS = {k: joblib.load(v) for k, v in SHAP_PATHS.items() if v.exists()}
-
-# ==========================================================
-#  FUNCIONES AUXILIARES Y NORMALIZADORES
-# ==========================================================
-
-PISA_YEARS = [2012, 2015, 2018, 2022]
-
-#Creamos un dicionario que serirá para normalizar la consulta del LLM
-SUBJECT_MAP = {
-    "math": "math", "matematicas": "math", "matemáticas": "math", "mates": "math", "mathematics": "math",
-    "read": "read", "lectura": "read", "literatura": "read", "reading": "read",
-    "scie": "scie", "ciencias": "scie", "science": "scie"
-}
-#Traduccion directa
-SUBJECT_NAMES_ES = {
-    "math": "Matemáticas",
-    "read": "Lectura",
-    "scie": "Ciencias"
-}
-
-ENCODED_COLS = {
-    "ECS_categoria_Bajo",
-    "ECS_categoria_Medio",
-    "Perfil_Pais_Gasto bajo_Financiación privada alta",
-    "Perfil_Pais_Gasto medio-alto_Esfuerzo y financiación privada altos",
-    "Perfil_Pais_Gasto medio-bajo",
-}
-
-#Mapeo de algunas variables de estrato con su correspondencia a nivel de pais
-
-MODEL_LOCAL_TO_COUNTRY_PROXY = {
-    "escs_estrato": (
-        "escs_media_pais",
-        "Nota: 'escs_estrato' mide el nivel socioeconómico de cada estrato; a escala nacional se analiza mediante su media agregada 'escs_media_pais'."
-    ),
-    "brecha_escs_local": (
-        "escs_media_pais",
-        "Nota metodológica: 'brecha_escs_local' (escs_estrato - escs_media_pais) mide la desigualdad intra-país entre estratos y su media nacional es 0. A nivel país se evalúa a través de 'escs_media_pais' (o 'gini')."
-    ),
-    "brecha_deberes_local": (
-        "tiempo_deberes_totales_diarios",
-        "Nota metodológica: 'brecha_deberes_local' mide la desviación local del estrato respecto a la media del país (su promedio nacional es 0). A nivel país se analiza mediante 'tiempo_deberes_totales_diarios'."
-    ),
-    "Presion_Academica_Neta": (
-        "tiempo_deberes_totales_diarios",
-        "Nota metodológica: 'Presion_Academica_Neta' es un indicador compuesto de estrato (deberes / (1 + apoyo)). A nivel país se analiza su componente principal 'tiempo_deberes_totales_diarios'."
-    ),
-    "media_math_estrato": ("media_math_pais", None),
-    "media_read_estrato": ("media_read_pais", None),
-    "media_scie_estrato": ("media_scie_pais", None),
+SINONIMOS_VARIABLES = {
+    "nota": ["nota", "matematicas", "rendimiento", "puntuacion", "math", "score"],
+    "Indice_Compromiso_Competencia": ["compromiso", "indice", "indice de compromiso", "competencia", "engagement"],
+    "recursos_estudio": ["recursos", "recursos de estudio", "recursos estudio"],
+    "riqueza_hogar": ["riqueza", "riqueza del hogar", "wealth"],
+    "libros": ["libros", "libros en casa", "books"],
+    "HISEI_TREND": ["hisei", "ocupacion", "ocupacion de los padres", "estatus"],
+    "PAREDINT_TREND": ["paredint", "estudios de los padres", "estudios padres", "educacion padres"],
+    "composicion_social_centro": ["composicion social", "composicion social del centro", "escs del centro"],
+    "dotacion_centro": ["dotacion", "dotacion del centro", "recursos del centro"],
 }
 
 
-
-def get_available_country_variables() -> list[str]:
-    """Extrae las variables base reales de df_paises quitando el sufijo del año."""
-    return sorted({
-        col[:-5] for col in df_paises.columns 
-        if any(col.endswith(f"_{y}") for y in PISA_YEARS)
-    })
-
-def clean_variable_name(variable: str) -> str:
-    """Limpia sufijos de año y corrige nombres parecidos automáticamente."""
-    var_clean = str(variable).strip()
-    for y in PISA_YEARS:
-        if var_clean.endswith(f"_{y}"):
-            var_clean = var_clean[:-5]
-            break
-
-    valid_vars = get_available_country_variables()
-    if var_clean in valid_vars or var_clean in df_estratos.columns:
-        return var_clean
-
-    matches = difflib.get_close_matches(var_clean, valid_vars, n=1, cutoff=0.6)
-    return matches[0] if matches else var_clean
-
-def resolve_country_variable(variable: str) -> tuple[str, str]:
-    """
-    Limpia el sufijo de año y, si el LLM pasa una variable de estrato a una herramienta de país,
-    devuelve (variable_pais_valida, nota_metodologica) para responder en 1 solo paso sin fallar.
-    """
-    var_clean = clean_variable_name(variable)
-
-    #Comprobamos si es una variable de estrato con correspondencia a pais
-    if var_clean in MODEL_LOCAL_TO_COUNTRY_PROXY:
-        target_var, nota = MODEL_LOCAL_TO_COUNTRY_PROXY[var_clean]
-        return target_var, (f"{nota}\n" if nota else "")
-
-    #Si no es una variable con correspondencia, comprobamos si es valida y la devolvemos
-    valid_vars = get_available_country_variables()
-    if var_clean in valid_vars:
-        return var_clean, ""
-
-    #Si no es valida y no tiene correspondencia a pais buscamos el nombre mas parecido 
-    matches = difflib.get_close_matches(var_clean, valid_vars, n=1, cutoff=0.6)
-    return (matches[0] if matches else var_clean), ""
+def _sin_acentos(texto: str) -> str:
+    texto = unicodedata.normalize("NFKD", str(texto).strip().lower())
+    return "".join(c for c in texto if not unicodedata.combining(c)).replace("_", " ")
 
 
-def subject_normalizer(subject: str) -> str:
-    """Normaliza el nombre de la asignatura a 'math', 'read' o 'scie'."""
-    sub = str(subject).lower().strip()
-    if sub not in SUBJECT_MAP:
-        raise ValueError(
-            f"Asignatura '{subject}' no válida. Usa: 'math', 'read' o 'scie'."
-        )
-    return SUBJECT_MAP[sub]
+def _json(datos: dict) -> str:
+    """Serializa la salida de una herramienta en JSON compacto (menos tokens que texto o tablas)."""
+    return json.dumps(datos, ensure_ascii=False, separators=(",", ":"), default=str)
 
-def scale_derived_column(df_new: pd.DataFrame, df_old: pd.DataFrame, derived_col: str, num_col: str, den_col: str) -> None:
-    """
-    Recalcula una columna derivada del tipo (num_col / den_col) manteniendo
-    su escala original (tanto si está en proporción 0-1 como en porcentaje 0-100).
-    """
-    if derived_col not in df_new.columns or num_col not in df_new.columns or den_col not in df_new.columns:
-        return
 
-    old_num = df_old[num_col].replace(0, np.nan)
-    new_den = df_new[den_col].replace(0, np.nan)
-    old_den = df_old[den_col]
-    new_num = df_new[num_col]
+def _r(valor, decimales: Optional[int] = None):
+    """Redondea según la magnitud (menos dígitos = menos tokens) y convierte NaN en None para el JSON."""
+    if valor is None or (isinstance(valor, (float, np.floating)) and np.isnan(valor)):
+        return None
+    if not isinstance(valor, (int, float, np.number)):
+        return valor
+    valor = float(valor)
+    if decimales is None:
+        decimales = 0 if abs(valor) >= 1000 else 1 if abs(valor) >= 10 else 2
+    redondeado = round(valor, decimales)
+    return int(redondeado) if decimales == 0 else redondeado
 
-    factor = (new_num / old_num) * (old_den / new_den)
-    recalculated = df_old[derived_col] * factor
-    df_new[derived_col] = recalculated.fillna(df_old[derived_col])
 
-#TODO Comprobar si esto es verdad con los datos que tenemos de feaure engeneering 
-def recalculate_derived_features(df_orig: pd.DataFrame, df_mod: pd.DataFrame, modified_cols: set[str]) -> list[str]:
-    """
-    Recalcula automáticamente los ratios e indicadores compuestos en df_mod
-    cuando se alteran sus variables base durante una simulación What-If.
-    Devuelve la lista de variables derivadas que se han actualizado.
-    """
-    recalculadas = []
+def _error(mensaje: str) -> str:
+    return _json({"error": mensaje})
 
-    # 1. Presion_Academica_Neta = tiempo_deberes_totales_diarios / (1 + dispone_personal_apoyo)
-    if {"tiempo_deberes_totales_diarios", "dispone_personal_apoyo"} & modified_cols:
-        if "Presion_Academica_Neta" in df_mod.columns and "Presion_Academica_Neta" not in modified_cols:
-            df_mod["Presion_Academica_Neta"] = (
-                df_mod["tiempo_deberes_totales_diarios"] / (1.0 + df_mod["dispone_personal_apoyo"])
-            )
-            recalculadas.append("Presion_Academica_Neta")
 
-    # 2. brecha_escs_local = escs_estrato - escs_media_pais
-    if {"escs_estrato", "escs_media_pais"} & modified_cols:
-        if "brecha_escs_local" in df_mod.columns and "brecha_escs_local" not in modified_cols:
-            df_mod["brecha_escs_local"] = df_mod["escs_estrato"] - df_mod["escs_media_pais"]
-            recalculadas.append("brecha_escs_local")
+def _years(year) -> list[int]:
+    """'all' -> todas las ediciones; un año -> lista con ese año (validado)."""
+    if str(year).lower().strip() in ("all", "todos", "todas"):
+        return PISA_YEARS
+    y = int(year)
+    if y not in PISA_YEARS:
+        raise ValueError(f"El año '{year}' no es válido. Usa {PISA_YEARS} o 'all'.")
+    return [y]
 
-    # 3. brecha_deberes_local = tiempo_deberes_totales_diarios - media_pais(tiempo_deberes_totales_diarios)
-    if "tiempo_deberes_totales_diarios" in modified_cols:
-        if "brecha_deberes_local" in df_mod.columns and "brecha_deberes_local" not in modified_cols:
-            deberes_media_pais = df_mod["tiempo_deberes_totales_diarios"].mean()
-            df_mod["brecha_deberes_local"] = df_mod["tiempo_deberes_totales_diarios"] - deberes_media_pais
-            recalculadas.append("brecha_deberes_local")
 
-    # 4. coste_docente_por_alumno_usd_ppp = salario_legal_docente_15_años_experiencia_usd_ppp / alumnos_por_docente_secundaria_primera_etapa
-    if {"salario_legal_docente_15_años_experiencia_usd_ppp", "alumnos_por_docente_secundaria_primera_etapa"} & modified_cols:
-        col_coste = "coste_docente_por_alumno_usd_ppp"
-        if col_coste in df_mod.columns and col_coste not in modified_cols:
-            scale_derived_column(
-                df_mod, df_orig, col_coste,
-                "salario_legal_docente_15_años_experiencia_usd_ppp",
-                "alumnos_por_docente_secundaria_primera_etapa"
-            )
-            recalculadas.append(col_coste)
-            modified_cols.add(col_coste)
+def normalizar_valor(columna: str, valor: Optional[str]) -> Optional[str]:
+    """Traduce términos genéricos ('privados', 'rural', 'chicas'...) a la categoría de la columna."""
+    if valor is None or _sin_acentos(valor) in ("", "none", "todos", "todas", "all", "cualquiera"):
+        return None
+    texto = _sin_acentos(valor)
+    todos = {}
+    for categoria, sinonimos in SINONIMOS[columna].items():
+        for s in [_sin_acentos(categoria)] + sinonimos:
+            todos[s] = categoria
+    if texto in todos:
+        return todos[texto]
+    parecido = difflib.get_close_matches(texto, list(todos), n=1, cutoff=0.75)
+    if parecido:
+        return todos[parecido[0]]
+    raise ValueError(f"Valor '{valor}' no reconocido para {etiqueta(columna)}. Usa: {', '.join(SINONIMOS[columna])}.")
 
-    # 5. coste_docente_por_alumno_pct_gasto_alumno_secundaria
-    if {"coste_docente_por_alumno_usd_ppp", "gasto_alumno_secundaria_usd_ppp"} & modified_cols:
-        col_pct_coste = "coste_docente_por_alumno_pct_gasto_alumno_secundaria"
-        if col_pct_coste in df_mod.columns and col_pct_coste not in modified_cols:
-            scale_derived_column(
-                df_mod, df_orig, col_pct_coste,
-                "coste_docente_por_alumno_usd_ppp",
-                "gasto_alumno_secundaria_usd_ppp"
-            )
-            recalculadas.append(col_pct_coste)
 
-    # 6. servicios_auxiliares_pct_gasto_alumno_secundaria
-    if {"gasto_alumno_secundaria_servicios_auxiliares_usd_ppp", "gasto_alumno_secundaria_usd_ppp"} & modified_cols:
-        col_serv = "servicios_auxiliares_pct_gasto_alumno_secundaria"
-        if col_serv in df_mod.columns and col_serv not in modified_cols:
-            scale_derived_column(
-                df_mod, df_orig, col_serv,
-                "gasto_alumno_secundaria_servicios_auxiliares_usd_ppp",
-                "gasto_alumno_secundaria_usd_ppp"
-            )
-            recalculadas.append(col_serv)
+def normalizar_pais(pais: Optional[str]) -> Optional[str]:
+    """Código ISO del país a partir del código o del nombre; solo países del panel común."""
+    if pais is None or _sin_acentos(pais) in ("", "none", "todos", "all", "panel", "ocde", "oecd"):
+        return None
+    texto = _sin_acentos(pais)
+    if texto.upper() in PAISES_PANEL:
+        return texto.upper()
+    nombres = {_sin_acentos(nombre): iso for iso, nombre in NOMBRES_PAISES.items()}
+    parecido = difflib.get_close_matches(texto, list(nombres), n=1, cutoff=0.75)
+    if parecido:
+        return nombres[parecido[0]]
+    raise ValueError(f"'{pais}' no está en el panel de 12 países: {', '.join(PAISES_PANEL)}.")
 
-    # 7. gasto_alumno_secundaria_pct_pib_per_capita
-    if {"gasto_alumno_secundaria_usd_ppp", "pib_per_capita_usd_ppp"} & modified_cols:
-        col_gasto_pib = "gasto_alumno_secundaria_pct_pib_per_capita"
-        if col_gasto_pib in df_mod.columns and col_gasto_pib not in modified_cols:
-            scale_derived_column(
-                df_mod, df_orig, col_gasto_pib,
-                "gasto_alumno_secundaria_usd_ppp",
-                "pib_per_capita_usd_ppp"
-            )
-            recalculadas.append(col_gasto_pib)
 
-    # 8. salario_legal_docente_15_años_experiencia_pct_pib_per_capita
-    if {"salario_legal_docente_15_años_experiencia_usd_ppp", "pib_per_capita_usd_ppp"} & modified_cols:
-        col_sal_pib = "salario_legal_docente_15_años_experiencia_pct_pib_per_capita"
-        if col_sal_pib in df_mod.columns and col_sal_pib not in modified_cols:
-            scale_derived_column(
-                df_mod, df_orig, col_sal_pib,
-                "salario_legal_docente_15_años_experiencia_usd_ppp",
-                "pib_per_capita_usd_ppp"
-            )
-            recalculadas.append(col_sal_pib)
+def normalizar_variable(variable: str) -> str:
+    """Columna numérica a partir de su nombre o de un sinónimo."""
+    if variable in VARIABLES_NUMERICAS:
+        return variable
+    texto = _sin_acentos(variable)
+    todos = {s: col for col, lista in SINONIMOS_VARIABLES.items() for s in lista}
+    if texto in todos:
+        return todos[texto]
+    parecido = difflib.get_close_matches(texto, list(todos), n=1, cutoff=0.6)
+    if parecido:
+        return todos[parecido[0]]
+    raise ValueError(f"Variable '{variable}' no disponible. Usa: {', '.join(SINONIMOS_VARIABLES)}.")
 
-    # 9. ratio_gasto_preprimaria_sobre_secundaria
-    if {"gasto_alumno_preprimaria_usd_ppp", "gasto_alumno_secundaria_usd_ppp"} & modified_cols:
-        col_ratio_pre = "ratio_gasto_preprimaria_sobre_secundaria"
-        if col_ratio_pre in df_mod.columns and col_ratio_pre not in modified_cols:
-            scale_derived_column(
-                df_mod, df_orig, col_ratio_pre,
-                "gasto_alumno_preprimaria_usd_ppp",
-                "gasto_alumno_secundaria_usd_ppp"
-            )
-            recalculadas.append(col_ratio_pre)
 
-    return recalculadas
+def media_ponderada(df: pd.DataFrame, columna: str) -> Optional[float]:
+    """Media ponderada con SENWT ignorando los vacíos."""
+    validos = df[columna].notna()
+    pesos = df.loc[validos, "SENWT"]
+    return float(np.average(df.loc[validos, columna], weights=pesos)) if pesos.sum() > 0 else None
+
+
+def filtrar_alumnos(year="all", CNT: Optional[str] = None, **filtros) -> tuple[pd.DataFrame, dict, list[str]]:
+    """Alumnos filtrados por edición, país y cualquier columna de SINONIMOS. Devuelve (datos, filtros, avisos)."""
+    df = cargar_alumnos()
+    years = _years(year)
+    df = df[df["year"].isin(years)]
+    aplicados = {}
+    pais = normalizar_pais(CNT)
+    if pais:
+        df = df[df["CNT"] == pais]
+        aplicados["pais"] = pais
+    for columna, valor in filtros.items():
+        categoria = normalizar_valor(columna, valor)
+        if categoria:
+            df = df[df[columna] == categoria]
+            aplicados[columna] = categoria
+    avisos = []
+    if 2018 in years:
+        avisos.append(AVISO_2018_CORTO)
+    if df["perfil_poco_representativo"].any():
+        avisos.append(AVISO_POCO_REPRESENTATIVO)
+    return df, aplicados, avisos
 
 
 # ==============================================================================
-# HERRAMIENTAS DE CONSULTA y ESTADISTICA
+# a) ESTADÍSTICAS DESCRIPTIVAS EN VIVO
 # ==============================================================================
 
 @tool
-def get_country_data(CNT: str, year: Union[int,str] = 'all') -> str:
+def get_math_stats(
+    year: Union[int, str] = 2022, CNT: Optional[str] = None, variable: str = "nota",
+    tipo_centro: Optional[str] = None, ubicacion: Optional[str] = None, tamano: Optional[str] = None,
+    compromiso: Optional[str] = None, recursos: Optional[str] = None, sexo: Optional[str] = None,
+    origen: Optional[str] = None,
+    group_by: Optional[Literal["tipo_centro", "ubicacion", "tamano", "compromiso", "recursos", "sexo", "origen",
+                               "pais", "edicion"]] = None,
+) -> str:
     """
-    Retrieve historical PISA educational and socioeconomic indicators for a specific country.
-    By default (year='all'), returns the complete evolution across all 4 cycles (2012, 2015, 2018, 2022) in a single call.
-    
-    Parameters:
-    - CNT: 3-letter ISO country code (e.g., 'ESP', 'MEX', 'FIN').
-    - year: 'all' (recommended, returns 2012-2022 table) or a specific year (2012, 2015, 2018, 2022).
+    Weighted mean of a student variable (default 'nota' = math score) for any subgroup, optionally compared by group.
+    - year: 2012, 2015, 2018, 2022 or 'all' (evolution by edition). CNT: ISO code or empty for the 12-country panel.
+    - variable: 'nota', 'compromiso' (engagement index), 'recursos' (study resources), 'riqueza', 'libros',
+      'ocupacion' or 'estudios padres' (parents), 'composicion social' or 'dotacion' (school).
+    - Filters accept generic terms: tipo_centro publico|concertado|privado; ubicacion urbano|rural;
+      tamano pequeño|mediano|grande (these three are the 'estratos fijos'); compromiso bajo|medio|alto;
+      recursos bajo|medio|alto; sexo chica|chico; origen nativo|inmigrante.
+    - group_by: compare categories (e.g. 'tipo_centro' public vs private, 'pais' for a country ranking).
     """
     try:
-        codigo_pais = CNT.upper().strip()
-        registro = df_paises[df_paises['CNT'] == codigo_pais]
-        if registro.empty:
-            return f"No se han encontrado registros para {codigo_pais}."
-        
-        fila = registro.iloc[0]
-        years_to_show = PISA_YEARS if str(year).lower().strip() in ("all", "todos") else [int(year)]
-        for y in years_to_show:
-            if y not in PISA_YEARS:
-                return f"Error: El año '{y}' no es válido. Usa {PISA_YEARS} o 'all'."
+        columna = normalizar_variable(variable)
+        df, aplicados, avisos = filtrar_alumnos(year, CNT, tipo_centro=tipo_centro, ubicacion=ubicacion,
+                                                tamano=tamano, nivel_compromiso=compromiso, nivel_recursos=recursos,
+                                                sexo=sexo, origen=origen)
+        if df.empty:
+            return _error("No hay alumnos con esos filtros.")
 
-        indicadores_clave = [
-            ("media_math_pais", "Media Matemáticas (pts)"),
-            ("media_read_pais", "Media Lectura (pts)"),
-            ("media_scie_pais", "Media Ciencias (pts)"),
-            ("escs_media_pais", "Índice socioeconómico medio (ESCS)"),
-            ("gasto_alumno_secundaria_usd_ppp", "Gasto alumno Secundaria (USD PPP)"),
-            ("gasto_acumulado_alumno_6_a_15_años_usd_ppp", "Gasto acumulado 6-15 años (USD PPP)"),
-            ("gasto_publico_total_pct_pib", "Gasto público educativo (% PIB)"),
-            ("pct_gasto_secundaria_en_personal", "% Gasto Secundaria en personal"),
-            ("pct_gasto_secundaria_en_docentes", "% Gasto Secundaria en docentes"),
-            ("salario_legal_docente_15_años_experiencia_usd_ppp", "Salario docente 15 años exp (USD PPP)"),
-            ("alumnos_por_docente_secundaria_primera_etapa", "Ratio alumnos/docente Secundaria"),
-            ("tiempo_deberes_totales_diarios", "Tiempo deberes diarios (h)"),
-            ("dispone_personal_apoyo", "Dispone personal de apoyo"),
-            ("pib_per_capita_usd_ppp", "PIB per cápita (USD PPP)"),
-            ("gini", "Índice de Gini"),
-        ]
+        varias_ediciones = df["year"].nunique() > 1 and group_by != "edicion"
 
-        encabezado = f"Indicadores de {codigo_pais} ({', '.join(map(str, years_to_show))}):\n"
-        lineas = []
-        for col_base, etiqueta in indicadores_clave:
-            vals = []
-            for y in years_to_show: #Muestra la salida con todos los datos de cada año ( si se indica 'all')
-                v = fila.get(f"{col_base}_{y}", np.nan) #Cofe el valor de la columna para el año de df_paises
-                vals.append(f"{y}: {v:.2f}" if pd.notna(v) and isinstance(v, (int, float, np.number)) else f"{y}: N/D")
-            lineas.append(f"- {etiqueta}: " + " | ".join(vals))
+        def resumen(bloque: pd.DataFrame):
+            if varias_ediciones:
+                return {int(y): _r(media_ponderada(g, columna)) for y, g in bloque.groupby("year")}
+            return _r(media_ponderada(bloque, columna))
 
-        return encabezado + "\n".join(lineas) #Devuelve los datos indicando el año
+        salida = {"variable": etiqueta(columna), "ambito": aplicados.pop("pais", "panel de 12 países"),
+                  "edicion": "2012-2022" if str(year).lower() in ("all", "todos", "todas") else int(year),
+                  "filtros": aplicados, "n_alumnos": len(df), "media": resumen(df)}
+        if group_by:
+            col_grupo = GRUPOS[group_by]
+            peso_total = df["SENWT"].sum()
+            grupos, pocos = {}, []
+            for categoria, g in df.groupby(col_grupo, observed=True):
+                clave = int(categoria) if col_grupo == "year" else str(categoria)
+                if col_grupo in ("CNT", "year"):   # cada país y edición pesa lo mismo: el % no aporta
+                    grupos[clave] = resumen(g)
+                else:
+                    grupos[clave] = {"media": resumen(g), "pct": _r(100 * g["SENWT"].sum() / peso_total, 1)}
+                if len(g) < MINIMO_ALUMNOS:
+                    pocos.append(str(clave))
+            salida[f"por_{group_by}"] = grupos
+            if pocos:
+                avisos.append(f"Pocos alumnos en: {', '.join(pocos)}")
+        if avisos:
+            salida["avisos"] = avisos
+        return _json(salida)
     except Exception as e:
-        return f"Error al recuperar datos históricos: {str(e)}"
+        return _error(f"Estadísticas: {e}")
+
 
 @tool
-def get_cross_country_stats( variable: str, year: Union[int, str] = 2022, operation: Literal["mean", "media", "top", "bottom"] = "mean", top_n: int = 5) -> str:
+def calculate_correlation(variable_a: str, variable_b: str = "nota", year: Union[int, str] = 2022,
+                          CNT: Optional[str] = None, tipo_centro: Optional[str] = None,
+                          ubicacion: Optional[str] = None, tamano: Optional[str] = None) -> str:
     """
-    Computes comparative cross-country statistics and rankings using the country-level dataset (df_paises).
-    
-    Parameters:
-    - variable: Base variable name WITHOUT the year suffix (e.g., 'media_math_pais', 'gasto_alumno_secundaria_usd_ppp', 'tiempo_deberes_totales_diarios').
-    - year: PISA cycle year (2012, 2015, 2018, 2022) or 'all' to compute the historical average across all available cycles. Defaults to 2022.
-    - operation: Operation to perform. Options: 'mean' (or 'media', global cross-country average), 'top' (highest scoring countries), 'bottom' (lowest scoring countries).
-    - top_n: Number of countries to display when 'top' or 'bottom' is selected (defaults to 5).
+    Weighted Pearson correlation between two student variables (same names as get_math_stats 'variable').
+    Returns the mean r within each country-edition (the fair comparison, as in the project's EDA) and the pooled r.
+    Optional filters by country and 'estratos fijos' (tipo_centro, ubicacion, tamano).
     """
-
     try:
-        var_base = clean_variable_name(variable)
-        op = operation.lower().strip()
+        col_a, col_b = normalizar_variable(variable_a), normalizar_variable(variable_b)
+        df, aplicados, avisos = filtrar_alumnos(year, CNT, tipo_centro=tipo_centro, ubicacion=ubicacion, tamano=tamano)
+        df = df.dropna(subset=[col_a, col_b])
+        if len(df) < MINIMO_ALUMNOS:
+            return _error(f"Solo {len(df)} alumnos con datos en ambas variables.")
 
-        # Si se especififica una comparativa global -> media histórica de todos los años ('all')
-        if str(year).lower().strip() in ("all", "todos", "media", "mean"):
-            cols_historicas = [f"{var_base}_{y}" for y in PISA_YEARS if f"{var_base}_{y}" in df_paises.columns]
-            if not cols_historicas:
-                vars_disponibles = ", ".join(get_available_country_variables())
-                return (
-                    f"Error: La variable '{var_base}' no existe en la base de datos.\n"
-                    f"Variables disponibles: {vars_disponibles}"
-                )
-            df_temp = df_paises[["CNT"]].copy()
-            df_temp["valor_agregado"] = df_paises[cols_historicas].mean(axis=1, skipna=True)
-            df_valido = df_temp.dropna(subset=["valor_agregado"]).rename(
-                columns={"valor_agregado": f"{var_base}_promedio_2012_2022"}
-            )
-            col_objetivo = f"{var_base}_promedio_2012_2022"
-            etiqueta_temporal = "promedio histórico (2012-2022)"
+        def r_ponderada(g: pd.DataFrame) -> float:
+            w = g["SENWT"].to_numpy(dtype=float)
+            x, y = g[col_a].to_numpy(dtype=float), g[col_b].to_numpy(dtype=float)
+            x, y = x - np.average(x, weights=w), y - np.average(y, weights=w)
+            return float(np.sum(w * x * y) / np.sqrt(np.sum(w * x * x) * np.sum(w * y * y)))
 
-        else: #Se especifica un año en concreto
-            year_int = int(year)
-            if year_int not in PISA_YEARS:
-                return f"Error: El año '{year}' no es válido. Usa 2012, 2015, 2018, 2022 o 'all'."
-            col_objetivo = f"{var_base}_{year_int}"
-            if col_objetivo not in df_paises.columns:
-                vars_disponibles = ", ".join(get_available_country_variables())
-                return (
-                    f"Error: La columna '{col_objetivo}' no existe en la base de datos.\n"
-                    f"Variables base disponibles: {vars_disponibles}"
-                )
-            df_valido = df_paises[["CNT", col_objetivo]].dropna()
-            etiqueta_temporal = f"edición {year_int}"
-
-        #Hacemos el calculo solocitado 
-        if df_valido.empty:
-            return f"No hay datos válidos disponibles para '{var_base}' ({etiqueta_temporal})."
-
-        if op in ("mean", "media"):
-            valor = df_valido[col_objetivo].mean()
-            return (
-                f"La media de la OCDE (promedio entre {len(df_valido)} países con datos) "
-                f"para '{var_base}' en la {etiqueta_temporal} es: {valor:.2f}"
-            )
-        elif op == "top":
-            top_df = df_valido.nlargest(top_n, col_objetivo)
-            return (
-                f"Top {top_n} países para '{var_base}' ({etiqueta_temporal}):\n"
-                f"{top_df.to_string(index=False)}"
-            )
-        elif op == "bottom":
-            bottom_df = df_valido.nsmallest(top_n, col_objetivo)
-            return (
-                f"Bottom (últimos) {top_n} países para '{var_base}' ({etiqueta_temporal}):\n"
-                f"{bottom_df.to_string(index=False)}"
-            )
-        else:
-            return "Error: Operación no soportada. Usa 'mean', 'top' o 'bottom'."
-
-    except Exception as e:
-        return f"Error al ejecutar la consulta comparativa: {str(e)}"
-
-@tool
-def get_cross_variable_stats(filter_variable: str, operator: Literal[">", "<", ">=", "<=", "=="], filter_value: float, target_variable: str, year: int = 2022,
-metric: Literal["mean", "median", "count"] = "mean") -> str:
-    """
-        Computes conditional statistics by filtering countries based on one variable and aggregating another in a specific PISA cycle.
-
-        Parameters:
-        - filter_variable: Base variable name to apply the filter condition on (e.g., 'gasto_alumno_secundaria_usd_ppp').
-        - operator: Strict comparison operator. Must be one of: '>', '<', '>=', '<=', '=='.
-        - filter_value: Numeric threshold for the condition (e.g., 12000).
-        - target_variable: Base variable name to compute the final metric on (e.g., 'media_math_pais').
-        - year: PISA cycle year (2012, 2015, 2018, 2022). Defaults to 2022.
-        - metric: Mathematical aggregation on target column ('mean', 'median', 'count'). Defaults to 'mean'.
-        """
- 
-    try:
-        if year not in PISA_YEARS:
-            return f"Error: El año '{year}' no es válido. Usa uno de: {PISA_YEARS}."
-        
-        f_base = clean_variable_name(filter_variable)
-        t_base = clean_variable_name(target_variable)
-        filter_col = f"{f_base}_{year}"
-        target_col = f"{t_base}_{year}"
-
-        # Validar existencia de columnas
-        if filter_col not in df_paises.columns or target_col not in df_paises.columns:
-            vars_disponibles = ", ".join(get_available_country_variables())
-            return (
-                f"Error: Verifica que ambas variables existan. Recibido: '{f_base}' y '{t_base}'.\n"
-                f"Variables disponibles: {vars_disponibles}"
-            )
-
-        #Obtenemos los paises que son nulos para traquearlos 
-        paises_nulos_filtro = df_paises[df_paises[filter_col].isna()]["CNT"].tolist()
-        nota_nulos_filtro = (
-            f"\n- Países de la OCDE no evaluados por carecer de dato en '{filter_col}' ({len(paises_nulos_filtro)}): {', '.join(paises_nulos_filtro)}"
-            if paises_nulos_filtro else ""
-        )
-
-        # Filtramos primero solo por la columna de condición para no perder países que cumplen el criterio
-        df_con_filtro = df_paises.dropna(subset=[filter_col])
-
-        ops = {
-            ">": df_con_filtro[filter_col] > filter_value,
-            "<": df_con_filtro[filter_col] < filter_value,
-            ">=": df_con_filtro[filter_col] >= filter_value,
-            "<=": df_con_filtro[filter_col] <= filter_value,
-            "==": df_con_filtro[filter_col] == filter_value,
+        dentro = [r_ponderada(g) for _, g in df.groupby(["CNT", "year"], observed=True) if len(g) >= MINIMO_ALUMNOS]
+        r = float(np.mean(dentro)) if dentro else r_ponderada(df)
+        salida = {
+            "a": etiqueta(col_a), "b": etiqueta(col_b), "ambito": aplicados.pop("pais", "panel de 12 países"),
+            "filtros": aplicados, "n_alumnos": len(df),
+            "r_dentro_pais_edicion": _r(r, 2), "r_global": _r(r_ponderada(df), 2),
+            "fuerza": "fuerte" if abs(r) >= 0.5 else "moderada" if abs(r) >= 0.3 else "débil",
         }
-
-        if operator not in ops:
-            return f"Error: Operador '{operator}' no soportado. Usa >, <, >=, <= o ==."
-
-        df_cumplen = df_con_filtro[ops[operator]]
-        paises_cumplen = df_cumplen["CNT"].tolist()
-        total_cumplen = len(paises_cumplen)
-
-        if total_cumplen == 0:
-            return f"Ningún país cumple la condición: {filter_col} {operator} {filter_value}."
-
-        if metric == "count":
-            return (
-                f"Análisis condicional ({year}):\n"
-                f"- Condición aplicada: {filter_col} {operator} {filter_value}\n"
-                f"- Número de países que cumplen la condición: {total_cumplen} ({', '.join(paises_cumplen)})"
-                f"{nota_nulos_filtro}"
-                
-            )
-        
-        # Para 'mean' o 'median', comprobamos cuántos tienen dato válido en target_col
-        df_objetivo_valido = df_cumplen.dropna(subset=[target_col])
-        paises_validos = df_objetivo_valido["CNT"].tolist()
-        excluidos = [p for p in paises_cumplen if p not in paises_validos]
-
-        if df_objetivo_valido.empty:
-            return (
-                f"Los países {', '.join(paises_cumplen)} cumplen la condición {filter_col} {operator} {filter_value}, "
-                f"pero ninguno dispone de datos válidos en '{target_col}'."
-            )
-
-        if metric == "mean":
-            resultado = df_objetivo_valido[target_col].mean()
-            nombre_metrica = "media"
-        elif metric == "median":
-            resultado = df_objetivo_valido[target_col].median()
-            nombre_metrica = "mediana"
-        else:
-            return "Error: Métrica no soportada. Usa 'mean', 'median' o 'count'."
-
-        nota_excluidos = (
-            f"\n- Nota: Se excluyeron del cálculo de '{target_col}' por falta de dato: {', '.join(excluidos)}."
-            if excluidos else ""
-        )
-
-        return (
-            f"Análisis cruzado completado (PISA {year}):\n"
-            f"- Condición aplicada: {filter_col} {operator} {filter_value}\n"
-            f"- Países que cumplen la condición ({total_cumplen}): {', '.join(paises_cumplen)}\n"
-            f"- Países con dato válido en '{target_col}' ({len(paises_validos)}): {', '.join(paises_validos)}"
-            f"{nota_nulos_filtro}{nota_excluidos}\n"
-            f"- La {nombre_metrica} de '{target_col}' para este grupo es: {resultado:.2f}"
-        )
-
+        if avisos:
+            salida["avisos"] = avisos
+        return _json(salida)
     except Exception as e:
-        return f"Error al ejecutar la estadística cruzada: {str(e)}"
+        return _error(f"Correlación: {e}")
 
-@tool
-def calculate_correlation(variable_a: str, variable_b: str, year_a: int = 2022, year_b: int = 2022) -> str:
-    """
-    Calculates the Pearson correlation coefficient between two numeric indicators across OECD countries.
-    Allows both same-year correlations (default, year_a = year_b = 2022) and lagged inter-temporal correlations.
 
-    Parameters:
-    - variable_a: First base variable name without year suffix (e.g., 'gasto_alumno_secundaria_usd_ppp').
-    - variable_b: Second base variable name without year suffix (e.g., 'media_math_pais').
-    - year_a: PISA cycle year for variable_a (2012, 2015, 2018, 2022). Defaults to 2022.
-    - year_b: PISA cycle year for variable_b (2012, 2015, 2018, 2022). Defaults to 2022.
-    """
-    try:
-        if year_a not in PISA_YEARS or year_b not in PISA_YEARS:
-            return f"Error: Los años deben pertenecer a {PISA_YEARS}."
-        
-        var_a, nota_a = resolve_country_variable(variable_a)
-        var_b, nota_b = resolve_country_variable(variable_b)
-        col_a = f"{var_a}_{year_a}"
-        col_b = f"{var_b}_{year_b}"
-        notas_metodologicas = f"{nota_a}{nota_b}"
-
-        if col_a not in df_paises.columns or col_b not in df_paises.columns:
-            vars_disponibles = ", ".join(get_available_country_variables())
-            return (
-                f"Error: Verifica los nombres de las variables. Buscado: '{col_a}' y '{col_b}'.\n"
-                f"Variables base disponibles: {vars_disponibles}"
-            )
-
-        df_valido = df_paises[["CNT", col_a, col_b]].dropna()
-        paises_validos = len(df_valido)
-
-        if paises_validos < 5:
-            return f"Error: Solo hay {paises_validos} países con datos conjuntos; se requieren al menos 5 para una correlación fiable."
-
-        corr = df_valido[col_a].corr(df_valido[col_b])
-
-        fuerza = "fuerte" if abs(corr) >= 0.6 else "moderada" if abs(corr) >= 0.3 else "débil"
-        direccion = "positiva (cuando una aumenta, la otra tiende a aumentar)" if corr > 0 else "negativa (cuando una aumenta, la otra tiende a disminuir)"
-        tipo_corr = (
-            f"contemporánea (edición {year_a})"
-            if year_a == year_b
-            else f"intertemporal con retardo ({year_a} vs {year_b})"
-        )
-
-        return (
-            f"{notas_metodologicas}\n"
-            f"Análisis de Correlación de Pearson ({tipo_corr}):\n"
-            f"- Variables analizadas: '{col_a}' y '{col_b}'\n"
-            f"- Coeficiente de correlación (r): {corr:.3f}\n"
-            f"- Interpretación: Relación lineal {fuerza} y {direccion}.\n"
-            f"- Muestra utilizada: {paises_validos} países de la OCDE con datos válidos en ambas métricas."
-        )
-    except Exception as e:
-        return f"Error al calcular la correlación: {str(e)}"
-
-@tool
-def analyze_temporal_trend(CNT: str, variable: str) -> str:
-    """
-    Extracts the historical evolution across all PISA cycles (2012, 2015, 2018, 2022) for a specific country.
-
-    Parameters:
-    - CNT: 3-letter ISO country code (e.g., 'ESP', 'MEX', 'FIN').
-    - variable: Base metric name without the year suffix (e.g., 'media_math_pais', 'gasto_alumno_secundaria_usd_ppp', 'escs_media_pais').
-
-    """
-    try:
-        codigo_pais = CNT.upper().strip()
-        var_base, nota_proxy = resolve_country_variable(variable)
-        registro = df_paises[df_paises["CNT"] == codigo_pais]
-
-        if registro.empty:
-            return f"Error: No se encontraron registros para el código de país '{codigo_pais}'."
-
-        lineas = []
-        valores_validos = []
-
-        for y in PISA_YEARS:
-            columna = f"{var_base}_{y}"
-            if columna not in registro.columns:
-                vars_disponibles = ", ".join(get_available_country_variables())
-                return (
-                    f"Error: La variable '{var_base}' no existe en la base de datos.\n"
-                    f"Variables disponibles: {vars_disponibles}"
-                )
-            val = registro.iloc[0][columna]
-            if pd.notna(val):
-                val_str = f"{val:.2f}" if isinstance(val, (int, float, np.number)) else str(val)
-                lineas.append(f"- Edición {y}: {val_str}")
-                if isinstance(val, (int, float, np.number)):
-                    valores_validos.append((y, float(val)))
-            else:
-                lineas.append(f"- Edición {y}: Dato no disponible")
-
-        resumen_cambio = ""
-        if len(valores_validos) >= 2:
-            y_ini, v_ini = valores_validos[0]
-            y_fin, v_fin = valores_validos[-1]
-            diff_neta = v_fin - v_ini
-            signo = "+" if diff_neta > 0 else ""
-            resumen_cambio = f"\nVariación neta observada ({y_ini}-{y_fin}): {signo}{diff_neta:.2f}"
-
-        return (
-            f"{nota_proxy}\n"
-            f"Evolución histórica de '{var_base}' para {codigo_pais} (2012-2022):\n"
-            + "\n".join(lineas)
-            + resumen_cambio
-        )
-    except Exception as e:
-        return f"Error al consultar la tendencia temporal: {str(e)}"    
-
-#TODO Herramienta de prueba (OLS o utilizar el modelo para predecir ?)
-@tool
-def predict_future_trend(CNT: str, variable: str = "media_math_pais", target_year: int = 2025) -> str:
-    """
-    Projects the future value of an educational score or socioeconomic indicator for a specific country
-    (defaulting to the next PISA cycle, 2025) using ordinary least squares (OLS) linear trend projection
-    over the historical PISA series (2012, 2015, 2018, 2022).
-
-    Parameters:
-    - CNT: 3-letter ISO country code (e.g., 'ESP', 'FIN', 'MEX').
-    - variable: Base variable name without year suffix (e.g., 'media_math_pais', 'media_read_pais', 'media_scie_pais', 'gasto_alumno_secundaria_usd_ppp'). Defaults to 'media_math_pais'.
-    - target_year: Future year to project (must be > 2022, defaults to 2025 for the next PISA cycle).
-    """
-    try:
-        if target_year <= 2022:
-            return "Error: Para consultar años históricos (2012-2022) usa 'get_country_data' o 'analyze_temporal_trend'. El año objetivo debe ser mayor a 2022 (ej. 2025)."
-
-        codigo_pais = CNT.upper().strip()
-        var_base = clean_variable_name(variable)
-        registro = df_paises[df_paises["CNT"] == codigo_pais]
-
-        if registro.empty:
-            return f"Error: No se encontraron registros para el código de país '{codigo_pais}'."
-
-        x_years = []
-        y_vals = []
-
-        for y in PISA_YEARS:
-            col = f"{var_base}_{y}"
-            if col not in registro.columns:
-                vars_disponibles = ", ".join(get_available_country_variables())
-                return (
-                    f"Error: La variable '{var_base}' no existe.\n"
-                    f"Variables disponibles: {vars_disponibles}"
-                )
-            val = registro.iloc[0][col]
-            if pd.notna(val) and isinstance(val, (int, float, np.number)):
-                x_years.append(float(y))
-                y_vals.append(float(val))
-
-        if len(x_years) < 2:
-            return (
-                f"Error: '{codigo_pais}' solo dispone de {len(x_years)} dato(s) histórico(s) para '{var_base}'. "
-                f"Se requieren al menos 2 ediciones para realizar una proyección lineal."
-            )
-
-        x_arr = np.array(x_years)
-        y_arr = np.array(y_vals)
-
-        # Ajuste lineal por mínimos cuadrados: y = pendiente * año + intercepto
-        pendiente, intercepto = np.polyfit(x_arr, y_arr, 1)
-        proyeccion = pendiente * target_year + intercepto
-
-        # Cálculo de R^2 para informar de la fiabilidad de la tendencia lineal
-        y_pred_hist = pendiente * x_arr + intercepto
-        ss_res = np.sum((y_arr - y_pred_hist) ** 2)
-        ss_tot = np.sum((y_arr - np.mean(y_arr)) ** 2)
-        r2 = 1.0 - (ss_res / ss_tot) if ss_tot > 0 else 1.0
-
-        ultimo_anio = int(x_arr[-1])
-        ultimo_valor = y_arr[-1]
-        cambio_proyectado = proyeccion - ultimo_valor
-        signo_cambio = "+" if cambio_proyectado > 0 else ""
-        signo_pendiente = "+" if pendiente > 0 else ""
-
-        serie_texto = ", ".join([f"{int(a)}: {v:.2f}" for a, v in zip(x_arr, y_arr)])
-
-        return (
-            f"Proyección de tendencia lineal para {codigo_pais} — Variable '{var_base}' (Objetivo: PISA {target_year}):\n"
-            f"- Serie histórica utilizada ({len(x_arr)} ciclos): {serie_texto}\n"
-            f"- Último valor registrado ({ultimo_anio}): {ultimo_valor:.2f}\n"
-            f"- Valor proyectado para {target_year}: {proyeccion:.2f} ({signo_cambio}{cambio_proyectado:.2f} respecto a {ultimo_anio})\n"
-            f"- Ritmo de variación anual (pendiente): {signo_pendiente}{pendiente:.2f} por año ({signo_pendiente}{pendiente * 3:.2f} por ciclo trienal PISA)\n"
-            f"- Bondad de ajuste lineal (R²): {r2:.3f}"
-        )
-
-    except Exception as e:
-        return f"Error al calcular la proyección futura: {str(e)}"
-    
 # ==============================================================================
-# HERRAMIENTAS DE MODELADO E INFERENCIA
+# b) CONTEXTO ESTÁTICO (imágenes pre-generadas)
 # ==============================================================================
-#
-@tool
-def get_feature_importance(subject:str = 'math') -> str:
-    """
-    Retrieves the top 10 global feature importance rankings from the trained XGBoost model for a given subject.
-
-    Parameters:
-    - subject: Academic subject. Must be one of: 'math' (Mathematics), 'read' (Reading/Literature), 'scie' (Science). Defaults to 'math'.
-    """
-
-    try:
-        sub = subject_normalizer(subject)
-        modelo = MODELS.get(sub)
-        if not modelo:
-            return f"Error: El modelo para '{subject}' no está disponible actualmente."
-        
-        #Obtenemos las importancias
-        importances = modelo.feature_importances_
-        pesos = { #Evitamos que se incluyan en los pesos las variables categoricas codificadas
-            col: imp
-            for col, imp in zip(columnas_del_modelo, importances)
-            if col not in ENCODED_COLS
-        }
-
-        #Ordenamos las claves, segun su valor en el diccionario ( nos quedamos con las 10 mas relevantes)
-        top_cols = sorted(pesos, key=pesos.get, reverse=True)[:10]
-        subject_names = {"math": "Matemáticas", "read": "Lectura", "scie": "Ciencias"}
-        texto = f"Importancia global de variables en el modelo predictivo de {subject_names[sub]}:\n"
-
-        VARS_SOLO_ESTRATO = {"escs_estrato", "brecha_escs_local", "brecha_deberes_local", "Presion_Academica_Neta"}
-        encontradas_estrato = [c for c in top_cols if c in VARS_SOLO_ESTRATO]
-        if encontradas_estrato:
-            texto += (
-                f"\nNota metodológica: {', '.join(encontradas_estrato)} son variables locales a nivel de estrato "
-                f"(df_estratos). Para analizar su contexto a nivel país en otras herramientas, utiliza sus variables "
-                f"nacionales matriz: 'escs_media_pais', 'tiempo_deberes_totales_diarios' o 'dispone_personal_apoyo'."
-    )
-
-        #Generamos en un bucle la lista de importancias obtenidas para el modelo 
-        for i, col in enumerate(top_cols, 1):
-            texto += f"{i}. {col}: {pesos[col]:.4f}\n"
-
-        return texto
-    
-    except Exception as e:
-        return f"Error al obtener la importancia de variables: {str(e)}"
-
 
 @tool
-def predict_and_explain_performance(CNT: str, subject: Literal["math", "read", "scie"] = "math", year: Union[int,str] = 'all') -> str:
+def get_context_chart(keyword: str = "") -> str:
     """
-    Provides the ML predicted subject score and top SHAP positive/negative drivers for a country.
-    Use year='all' to see if the most influential factors for that country have changed across 2012, 2015, 2018, and 2022.
-
-    Use this tool when the user asks:
-    - Why a country achieves its score according to the ML model.
-    - Which socioeconomic or educational factors are helping (positive SHAP) or penalizing (negative SHAP) a country.
-    DO NOT use this tool if the user asks for hypothetical changes, policies, or what-if scenarios.
-
-    Parameters:
-    - CNT: 3-letter ISO code (e.g., 'ESP', 'FIN', 'MEX').
-    - subject: Academic subject. Must be one of: 'math' (Mathematics), 'read' (Reading/Literature), 'scie' (Science). Defaults to 'math'.
-    - year: PISA cycle year (2012, 2015, 2018, 2022) default all, to make global comparations. 
-    """
-  
-    try:
-        sub = subject_normalizer(subject)
-        codigo_pais = CNT.upper().strip()
-        modelo = MODELS.get(sub)
-        explainer_sub = EXPLAINERS.get(sub)
-        if not modelo or not explainer_sub:
-            return f"Error: Modelo o explicador SHAP no disponible para '{subject}'."
-
-        #Años sobre los que explicar el desempeño
-        years_to_run = PISA_YEARS if str(year).lower().strip() in ("all", "todos") else [int(year)]
-
-        #Valor medido sin conocer los datos
-        valor_base = explainer_sub.expected_value
-        if isinstance(valor_base, (list, np.ndarray)):
-            valor_base = valor_base[0]
-
-        salida = [f"Explicabilidad SHAP para {codigo_pais} en {SUBJECT_NAMES_ES[sub]} (Base global: {valor_base:.2f} pts):"]
-        for y in years_to_run:
-            #Comprobamos el año
-            if y not in PISA_YEARS:
-                return f"Error: Año '{y}' no válido. Usa {PISA_YEARS} o 'all'."
-            df_orig = df_estratos[(df_estratos['CNT'] == codigo_pais) & (df_estratos['year'] == y)]
-
-            if df_orig.empty:
-                salida.append(f"- {y}: Sin datos.") #Variable sin datos para ese año
-                continue
-            #Filtramos las columnas usadas para entrenar el modelo
-            df_modelo = df_orig[columnas_del_modelo]
-            pred = modelo.predict(df_modelo).mean()
-
-            #obtenemos los valores SHAP con los datos del dataframe (Ej. un pais, o vairables modificadas)
-            shap_medio = explainer_sub.shap_values(df_modelo).mean(axis=0)
-            s_imp = pd.Series(shap_medio, index=columnas_del_modelo)
-
-            #obtenemos el top 3 variables que mas suman / restan
-            suman = [f"{c} (+{v:.2f})" for c, v in s_imp[s_imp > 0].nlargest(3).items()]
-            restan = [f"{c} ({v:.2f})" for c, v in s_imp[s_imp < 0].nsmallest(3).items()]
-
-            #Por cada edicion (año) que se quiere comprobar se dan sus valores SHAP en una misma salida
-            salida.append(
-                f"- Edición {y} (Predicción: {pred:.2f} pts):\n"
-                f"    Impulsores (+): {', '.join(suman) if suman else 'Ninguno'}\n"
-                f"    Penalizadores (-): {', '.join(restan) if restan else 'Ninguno'}"
-            )
-        return "\n".join(salida)
-    except Exception as e:
-        return f"Error al ejecutar SHAP: {str(e)}"
-    
-@tool
-def simulate_scenario(CNT: str, modifications: dict, subject: Literal["math", "read", "scie"] = "math", year: int = 2022) -> str:
-    """
-    Simulates a WHAT-IF policy scenario by altering specific variables for a country and estimating the net impact
-    on the predicted score using the trained XGBoost model. Automatically recalculates derived ratios and composite features.
-
-    Parameters:
-    - CNT: 3-letter ISO code (e.g., 'ESP', 'FIN', 'MEX').
-    - modifications: Dictionary mapping exact feature names (without year suffix) to their new hypothetical target values.
-      Example: {"gasto_alumno_secundaria_usd_ppp": 14000, "tiempo_deberes_totales_diarios": 1.5}
-    - subject: Academic subject. Must be one of: 'math' (Mathematics), 'read' (Reading/Literature), 'scie' (Science). Defaults to 'math'.
-    - year: Baseline PISA cycle year to run the simulation on (2012, 2015, 2018, 2022). Defaults to 2022.
+    Returns a pre-generated chart from the project's analysis (no computation). Use keyword to choose
+    (e.g. 'recursos', 'centro', 'cobertura'). The answer lists the other available charts.
     """
     try:
-        if year not in PISA_YEARS:
-            return f"Error: El año '{year}' no es válido. Usa uno de: {PISA_YEARS}."
-        
-        sub = subject_normalizer(subject)
-        codigo_pais = CNT.upper()
-        modelo = MODELS.get(sub)
-        if not modelo:
-            return f"Error: El modelo para '{subject}' no está disponible."
-        
-        df_orig = df_estratos[(df_estratos['CNT'] == codigo_pais) & (df_estratos['year'] == year)].copy()
-        if df_orig.empty:
-            return f"Error: No se encontró el país '{codigo_pais}' en la base del año {year}."
-
-        df_mod = df_orig.copy() #Copia local
-
-        #Nota original antes de realizar modificaciones
-        nota_original = modelo.predict(df_orig[columnas_del_modelo]).mean()
-
-        #Aplicamos los cambios indicados en modifications
-        cambios_texto = []
-        columnas_modificadas = set()
-        cols_modificables = [c for c in columnas_del_modelo if c not in ENCODED_COLS and c != "year"]
-
-        for raw_col, nuevo_valor in modifications.items():
-            col = clean_variable_name(raw_col)
-            if col not in df_mod.columns or col not in cols_modificables:
-                return (
-                    f"Error: La variable '{raw_col}' no es modificable o no existe.\n"
-                    f"Variables modificables disponibles: {', '.join(cols_modificables)}"
-                )
-            valor_antiguo_medio = float(df_mod[col].mean()) #Guardamos el valor antifuo
-            nuevo_val_float = float(nuevo_valor)
-
-            #Calculo de la diferencia de valor para preservar la varianza
-            delta = nuevo_val_float - valor_antiguo_medio
-            df_mod[col] = df_mod[col] + delta #Modificamos el valor de la columna por su variación, en vez de sustituir directamente el valor
-
-            columnas_modificadas.add(col)
-            cambios_texto.append(
-                f"- {col}: pasó de {valor_antiguo_medio:.2f} a {nuevo_val_float:.2f} ({'+' if delta >= 0 else ''}{delta:.2f})"
-            )
-
-        #Recalculamos las variables compuestas e indices derivados a partir de lso cambios introducidos
-        derivadas_actualizadas = recalculate_derived_features(df_orig, df_mod, columnas_modificadas)
-        texto_derivadas = ""
-        if derivadas_actualizadas:
-            lineas_derivadas = []
-            for d_col in derivadas_actualizadas:
-                ant_d = float(df_orig[d_col].mean())
-                nue_d = float(df_mod[d_col].mean())
-                lineas_derivadas.append(f"  * {d_col}: ajustado automáticamente de {ant_d:.4f} a {nue_d:.4f}")
-            texto_derivadas = "\nVariables derivadas recalculadas automáticamente:\n" + "\n".join(lineas_derivadas) + "\n"
-
-        #Prediccion del escenario
-        nota_simulada = float(modelo.predict(df_mod[columnas_del_modelo]).mean())
-        diferencia = nota_simulada - nota_original
-        signo = "+" if diferencia > 0 else ""
-        nombre_sub = SUBJECT_NAMES_ES[sub]
-
-        return (
-            f"Simulación de escenario What-If para {codigo_pais} en {nombre_sub} (Base PISA {year}):\n\n"
-            f"Modificaciones directas aplicadas:\n" + "\n".join(cambios_texto) + "\n"
-            f"{texto_derivadas}\n"
-            f"Resultados de la inferencia del modelo XGBoost:\n"
-            f"- Puntuación original estimada: {nota_original:.2f} puntos.\n"
-            f"- Puntuación simulada estimada: {nota_simulada:.2f} puntos.\n"
-            f"- Impacto neto estimado: {signo}{diferencia:.2f} puntos."
-        )
-
+        catalogo = cargar_catalogo_graficos()
+        if catalogo.empty:
+            return _error("No hay gráficos de contexto disponibles todavía.")
+        elegido = catalogo.iloc[0]
+        if keyword:
+            texto = (catalogo["id"] + " " + catalogo["descripcion"]).map(_sin_acentos)
+            clave = _sin_acentos(keyword)
+            puntuacion = texto.map(lambda t: max(difflib.SequenceMatcher(None, clave, p).ratio() for p in t.split()))
+            elegido = catalogo.loc[puntuacion.idxmax()]
+        return _json({"imagen": elegido["ruta"], "descripcion": elegido["descripcion"],
+                      "otros": [d for d in catalogo["descripcion"] if d != elegido["descripcion"]]})
     except Exception as e:
-        return f"Error en la simulación de escenario: {str(e)}"
+        return _error(f"Gráfico de contexto: {e}")
+
 
 # ==============================================================================
 # LISTA DE HERRAMIENTAS EXPORTADAS
 # ==============================================================================
 pisa_tools = [
-    get_country_data,
-    get_cross_country_stats,
-    get_cross_variable_stats,
-    calculate_correlation,
-    analyze_temporal_trend,
-    predict_future_trend,
-    get_feature_importance,
-    predict_and_explain_performance,
-    simulate_scenario,
+    # a) Estadísticas descriptivas en vivo
+    get_math_stats, calculate_correlation,
+    # b) Contexto estático
+    get_context_chart,
+    # c) Simulación con los modelos: se añadirá en la etapa 2 (regresión + XGBoost)
 ]

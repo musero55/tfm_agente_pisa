@@ -1,0 +1,5 @@
+id,tipo,ruta,descripcion
+recursos_alumno_nota,contexto,img/01_recursos_alumno_asociacion_nota.png,"Asociación de los recursos del hogar (recursos de estudio, riqueza y libros) con la nota, dentro de cada país y edición"
+recursos_alumno_paises,contexto,img/01_recursos_alumno_evolucion_pais.png,"Media de recursos de estudio, riqueza del hogar y libros por país y edición"
+recursos_centro_nota,contexto,img/01_recursos_centro_y_nota.png,Correlación del nivel socioeconómico y los recursos del centro con su nota media de matemáticas
+universo_modelo,contexto,img/01_variables_modelo_universo.png,"Cobertura de los datos: alumnos con perfil de centro, con índice de compromiso y centros por perfil y edición"
