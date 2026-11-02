@@ -45,9 +45,9 @@ Hay dos versiones:
 - No es la diferencia de nota media. En 2022 los alumnos del privado urbano grande sacan de media unos 59 puntos más
   que los del público urbano mediano; con alumnos iguales (mismo país, compromiso, recursos y origen social, y centro
   de igual composición social), unos 10 más. El resto se explica por quiénes son sus alumnos.
-- En 2022 se distinguen de cero el privado urbano grande (+10) y el público urbano grande (+7,5) por arriba, y el
-  concertado urbano pequeño (−12) y el privado urbano pequeño (−18) por abajo; en los demás la diferencia es pequeña
-  o incierta. Que un perfil saque más con lo demás igual no prueba que el centro sea la causa: puede haber
+- En 2022 se distinguen de cero el privado urbano grande (+10), el público urbano grande (+7,5) y el público rural
+  pequeño (+5) por arriba, y el concertado urbano pequeño (−12) y el privado urbano pequeño (−18) por abajo; en los
+  demás la diferencia es pequeña o incierta. Que un perfil saque más con lo demás igual no prueba que el centro sea la causa: puede haber
   diferencias entre alumnos que el modelo no mide.
 - En la regresión por perfil también hay un punto de partida, pero allí cada perfil tiene su propia inclinación y la
   distancia entre perfiles cambia según los recursos del alumno; por eso no se usa.
