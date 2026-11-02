@@ -214,25 +214,20 @@ def filtrar_alumnos(year="all", CNT: Optional[str] = None, **filtros) -> tuple[p
 # ==============================================================================
 
 @tool
-def get_math_stats(
-    year: Union[int, str] = 2022, CNT: Optional[str] = None, variable: str = "nota",
-    tipo_centro: Optional[str] = None, ubicacion: Optional[str] = None, tamano: Optional[str] = None,
-    compromiso: Optional[str] = None, recursos: Optional[str] = None, sexo: Optional[str] = None,
-    origen: Optional[str] = None,
-    group_by: Optional[Literal["tipo_centro", "ubicacion", "tamano", "compromiso", "recursos", "sexo", "origen",
-                               "pais", "edicion"]] = None,
-) -> str:
+def get_math_stats(year: Union[int, str] = 2022, CNT: str = "", variable: str = "nota", tipo_centro: str = "",
+                   ubicacion: str = "", tamano: str = "", compromiso: str = "", recursos: str = "", sexo: str = "",
+                   origen: str = "", group_by: str = "") -> str:
     """
-    Weighted mean of a student variable (default 'nota' = math score) for any subgroup, optionally compared by group.
-    - year: 2012, 2015, 2018, 2022 or 'all' (evolution by edition). CNT: ISO code or empty for the 12-country panel.
-    - variable: 'nota', 'compromiso' (engagement index), 'recursos' (study resources), 'riqueza', 'libros',
-      'ocupacion' or 'estudios padres' (parents), 'composicion social' or 'dotacion' (school).
-    - Filters accept generic terms: tipo_centro publico|concertado|privado; ubicacion urbano|rural;
-      tamano pequeño|mediano|grande (these three are the 'estratos fijos'); compromiso bajo|medio|alto;
-      recursos bajo|medio|alto; sexo chica|chico; origen nativo|inmigrante.
-    - group_by: compare categories (e.g. 'tipo_centro' public vs private, 'pais' for a country ranking).
+    Weighted mean of the math score ('nota') or another student variable for any subgroup.
+    - year: 2012, 2015, 2018, 2022 or 'all'. CNT: country, empty = 12-country panel.
+    - variable: nota, compromiso, recursos, riqueza, libros, ocupacion, estudios padres, composicion social, dotacion.
+    - Filters take everyday words: tipo_centro publico|concertado|privado, ubicacion urbano|rural,
+      tamano pequeño|mediano|grande, compromiso|recursos bajo|medio|alto, sexo chica|chico, origen nativo|inmigrante.
+    - group_by: tipo_centro, ubicacion, tamano, compromiso, recursos, sexo, origen, pais (ranking) or edicion.
     """
     try:
+        if group_by and group_by not in GRUPOS:
+            return _error(f"group_by '{group_by}' no válido. Usa: {', '.join(GRUPOS)}.")
         columna = normalizar_variable(variable)
         df, aplicados, avisos = filtrar_alumnos(year, CNT, tipo_centro=tipo_centro, ubicacion=ubicacion,
                                                 tamano=tamano, nivel_compromiso=compromiso, nivel_recursos=recursos,
@@ -273,13 +268,11 @@ def get_math_stats(
 
 
 @tool
-def calculate_correlation(variable_a: str, variable_b: str = "nota", year: Union[int, str] = 2022,
-                          CNT: Optional[str] = None, tipo_centro: Optional[str] = None,
-                          ubicacion: Optional[str] = None, tamano: Optional[str] = None) -> str:
+def calculate_correlation(variable_a: str, variable_b: str = "nota", year: Union[int, str] = 2022, CNT: str = "",
+                          tipo_centro: str = "", ubicacion: str = "", tamano: str = "") -> str:
     """
-    Weighted Pearson correlation between two student variables (same names as get_math_stats 'variable').
-    Returns the mean r within each country-edition (the fair comparison, as in the project's EDA) and the pooled r.
-    Optional filters by country and 'estratos fijos' (tipo_centro, ubicacion, tamano).
+    Weighted correlation between two student variables (names as in get_math_stats). Report the mean r within each
+    country-edition (the fair comparison). Optional filters: CNT, tipo_centro, ubicacion, tamano.
     """
     try:
         col_a, col_b = normalizar_variable(variable_a), normalizar_variable(variable_b)
@@ -325,9 +318,8 @@ def _puntuar_grafico(palabras: list[str], id_grafico: str, descripcion: str) -> 
 @tool
 def get_context_chart(keyword: str = "") -> str:
     """
-    Returns a pre-generated chart from the project's analysis (no computation). Use keyword to choose
-    (e.g. 'recursos', 'regresion perfiles', 'robustez', 'Australia', 'xgboost importancia', 'efecto techo').
-    The answer lists the five next most related charts.
+    A pre-generated chart of the analysis, chosen by keyword (e.g. 'recursos', 'regresion perfiles', 'robustez',
+    'Australia', 'xgboost importancia'). Also lists the five most related charts.
     """
     try:
         catalogo = cargar_catalogo_graficos()
@@ -352,9 +344,8 @@ TEMAS_METODOLOGIA = tuple(sorted(ruta.stem for ruta in DIR_METODOLOGIA.glob("*.m
 @tool
 def get_methodology(topic: Literal[TEMAS_METODOLOGIA]) -> str:
     """
-    Returns the project's methodology note on a topic: how an index, variable or school profile was built, which
-    survey items it uses, how editions were harmonised, how missing answers are handled, why these countries and
-    students, and the study's limitations. Call it for "how" or "why" questions about the study design.
+    The project's methodology note on a topic: how indices, variables and school profiles were built, missing
+    answers, sample and limitations, how to read the models ('modelos') and which results are fragile ('robustez').
     """
     try:
         return _json({"tema": topic, "texto": (DIR_METODOLOGIA / f"{topic}.md").read_text(encoding="utf-8")})
@@ -407,8 +398,9 @@ RANGO = {"Indice_Compromiso_Competencia": (-2.1, 1.54), "recursos_estudio": (0, 
 AVISOS_FRAGILES = {
     ("recursos_estudio", "PRI_URB_MACRO"): ({2022}, "Resultado frágil: el salto de 2022 en el privado urbano grande "
         "depende de Australia; sin Australia no se distingue de cero (nota de robustez)"),
-    ("Indice_Compromiso_Competencia", "todos"): ({2012, 2022}, "Resultado frágil: la subida del compromiso de 2012 a "
-        "2022 viene de los deberes y deja de distinguirse de cero al quitar algunos países (nota de robustez)"),
+    ("Indice_Compromiso_Competencia", "todos"): ({2012, 2022}, "Resultado frágil: la subida del coeficiente del índice "
+        "de 2012 a 2022 viene de los deberes y deja de distinguirse de cero al quitar algunos países (nota de "
+        "robustez). No afecta a las cifras de faltar a clase ni de llegar tarde, que son estables"),
 }
 AVISOS_SIMULACION = {
     "recursos_estudio": "Cuenta lineal. Casi todos los alumnos tienen ya 5 o 6 de los seis recursos (ver "
@@ -461,6 +453,8 @@ def _bloque(filas: pd.DataFrame, cambio: Optional[float]) -> dict:
     """Coeficiente con intervalo y p de cada edición; con varias, también el cambio de 2012 a 2022."""
     def fila(f) -> dict:
         datos = {"coef": _r(f.coeficiente), "ic": [_r(f.ic_inf), _r(f.ic_sup)], "p": _p(f.p_valor)}
+        if pd.notna(f.coeficiente_dt):   # para comparar variables entre sí, aunque se pidan por separado
+            datos["por_desv_tipica"] = _r(f.coeficiente_dt)
         if cambio is not None:
             datos["cambio_total_nota"] = _r(f.coeficiente * cambio)
             datos["ic_cambio_total"] = sorted([_r(f.ic_inf * cambio), _r(f.ic_sup * cambio)])
@@ -524,30 +518,19 @@ def _conductas() -> dict:
 
 
 @tool
-def get_regression_weights(variable: Optional[str] = None, year: Union[int, str] = 2022,
-                           tipo_centro: Optional[str] = None, ubicacion: Optional[str] = None,
-                           tamano: Optional[str] = None, cambio: Optional[float] = None,
+def get_regression_weights(variable: str = "", year: Union[int, str] = 2022, tipo_centro: str = "",
+                           ubicacion: str = "", tamano: str = "", cambio: Optional[float] = None,
                            desde: Optional[float] = None) -> str:
     """
-    Results of the project's linear regression of the math score (one per edition). Coefficients compare students of
-    the same country and school profile with the same social background; they are associations, not causal effects.
-    - No variable: weight of every variable in one edition, ranked by 'por_desv_tipica' (points per standard
-      deviation, the fair way to compare variables; 'coef' is in each variable's own unit).
-    - variable: 'compromiso', 'recursos', 'ocupacion', 'estudios padres', 'riqueza', 'libros', 'composicion social',
-      'dotacion', 'sexo' or 'inmigrante'. 'compromiso' (also 'faltar', 'llegar tarde', 'deberes') adds 'conductas': the
-      score points of each of its three behaviours, from a model with them separately (2012 and 2022). Use it for
-      any question about one behaviour. Add tipo_centro/ubicacion/tamano ('estratos fijos') to get the coefficient
-      inside those school profiles (only 'compromiso' and 'recursos' have one per profile).
-    - variable='perfil': score difference of each school profile versus public urban medium schools, with everything
-      else equal. Not the raw difference in mean scores. Use only the filters the user mentions: for "private vs
-      public" pass no filter, so that all profiles (public ones included) can be compared.
-    - cambio: linear simulation -> 'cambio_total_nota', with its own interval 'ic_cambio_total' ('coef' and 'ic' stay
-      per unit). Study resources are counted as items out of six (own room, computer, internet, study-help books,
-      technical books, dictionary): translate the user's words into items, e.g. "double" for a student with 3 ->
-      desde=3, cambio=3; "without a computer" -> cambio=-1. Most students already have 5 or 6.
-    - desde: optional starting value of the student; the tool checks that desde + cambio stays within the scale.
-    - year: 2012, 2015, 2018, 2022 or 'all'. For any "has it changed?" question use year='all' in a single call:
-      it returns every edition and the 2012-2022 change with its p-value.
+    Linear regression of the math score, one per edition: coefficients with interval and p.
+    - To compare variables ("which matters more?") call with NO variable: all ranked by 'por_desv_tipica'.
+    - variable: compromiso (also faltar, llegar tarde, deberes: adds 'conductas', use it for one behaviour), recursos,
+      ocupacion, estudios padres, riqueza, libros, composicion social, dotacion, sexo, inmigrante. With
+      tipo_centro/ubicacion/tamano: its coefficient inside those profiles (only compromiso and recursos).
+    - variable='perfil': gap of each profile vs public urban medium, everything else equal (private vs public: no filter).
+    - cambio (and optional starting value desde): linear simulation. Resources are items out of six: "double" for a
+      student with 3 -> desde=3, cambio=3; losing the computer -> cambio=-1.
+    - year: one edition or 'all' (one call; gives the 2012-2022 change and its p).
     """
     try:
         coeficientes = cargar_coeficientes()
@@ -682,28 +665,20 @@ def _valor_medio(df: pd.DataFrame, variable: str):
 
 
 @tool
-def get_xgboost_patterns(
-    analisis: Literal["importancia", "contribucion", "forma"] = "importancia", year: Union[int, str] = 2022,
-    variable: Optional[str] = None, CNT: Optional[str] = None,
-    tipo_centro: Optional[str] = None, ubicacion: Optional[str] = None, tamano: Optional[str] = None,
-    compromiso: Optional[str] = None, recursos: Optional[str] = None, sexo: Optional[str] = None,
-    origen: Optional[str] = None,
-    group_by: Optional[Literal["tipo_centro", "ubicacion", "tamano", "compromiso", "recursos", "sexo", "origen",
-                               "pais", "edicion"]] = None,
-) -> str:
+def get_xgboost_patterns(analisis: Literal["importancia", "contribucion", "forma"] = "importancia",
+                         year: Union[int, str] = 2022, variable: str = "", CNT: str = "", tipo_centro: str = "",
+                         ubicacion: str = "", tamano: str = "", compromiso: str = "", recursos: str = "",
+                         sexo: str = "", origen: str = "", group_by: str = "") -> str:
     """
-    What the XGBoost model learned, from each student's SHAP values (points of math score). Descriptive patterns, not
-    causal effects; for the effect per unit of a variable use get_regression_weights.
-    - analisis='importancia': how many points each variable moves the prediction on average, ranked. With filters, for
-      that group; with group_by, compared between groups; with year='all', its evolution. It has no direction and is
-      not a coefficient.
-    - analisis='contribucion': why the predicted score of the students in the filters is above or below the average
-      student of the edition: the mean SHAP of each variable (one edition). The interface shows a waterfall chart.
-    - analisis='forma': shape of the relationship of one variable ('recursos', 'compromiso', 'libros'...) with the
-      score: mean SHAP for each value, to see ceilings and non-linear patterns.
-    - Filters as in get_math_stats.
+    What the XGBoost learned, from each student's SHAP values (math points).
+    - importancia: points each variable moves the prediction (no direction); compare with group_by or year='all'.
+    - contribucion: why a group's predicted score is above or below the edition average (shows a waterfall).
+    - forma: mean SHAP per value of 'variable' (e.g. recursos, compromiso).
+    - Filters and group_by as in get_math_stats.
     """
     try:
+        if group_by and group_by not in GRUPOS:
+            return _error(f"group_by '{group_by}' no válido. Usa: {', '.join(GRUPOS)}.")
         filtros = dict(tipo_centro=tipo_centro, ubicacion=ubicacion, tamano=tamano, nivel_compromiso=compromiso,
                        nivel_recursos=recursos, sexo=sexo, origen=origen)
         años = _years(year)

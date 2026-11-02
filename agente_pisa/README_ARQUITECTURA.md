@@ -85,13 +85,15 @@ agente.py  (LangGraph: asistente <-> herramientas, con system_prompt.md)
 
 💡 **Selección dinámica de modelos de Groq.** `listar_modelos_groq()` consulta `client.models.list()` y cruza la respuesta con `MODELOS_GROQ_PRIORIDAD` (modelos verificados con Tool Calling: `gpt-oss-120b` como principal y `gpt-oss-20b` como respaldo). Si Groq retira un modelo, desaparece del selector sin tocar el código.
 
-💡 **Protección de tokens en la capa gratuita de Groq.** Cada llamada al LLM envía el System Prompt (unos 1.800 tokens) y los esquemas de las 6 herramientas (unos 2.300). Una pregunta suele hacer dos llamadas: elegir herramientas y redactar la respuesta. Para no gastar más:
+💡 **Protección de tokens en la capa gratuita de Groq.** El plan gratuito permite 8.000 tokens por minuto y 200.000 al día por modelo (`gpt-oss-120b` y `gpt-oss-20b`). Una pregunta suele hacer dos llamadas al LLM (elegir herramientas y redactar la respuesta), y cada una envía el System Prompt (unos 940 tokens) y los esquemas de las 6 herramientas (unos 1.525): unos 2.460 fijos por llamada. Antes eran 4.200 y una pregunta superaba el límite por minuto; desde el recorte, una pregunta normal gasta entre 4.800 y 6.000 tokens (unas 7.000 si lee una nota de metodología). Para no gastar más:
+- el System Prompt guarda solo las reglas de interpretación y el enrutado; cómo llamar a cada herramienta está en su descripción, sin repetirlo;
+- los filtros de las herramientas son texto con valor vacío por defecto, que ocupa menos de la mitad que «texto o nada»;
 - ventana deslizante de 4 mensajes, que empieza siempre en una pregunta del usuario y no separa una llamada a herramienta de su resultado;
 - salidas de herramientas en JSON compacto con etiquetas legibles: de unos 50 a 500 tokens (las notas de metodología, de 800 a 2.800);
 - las gráficas de las respuestas las dibuja la app a partir del JSON, sin pedírselas al LLM;
 - la exploración manual y la galería se calculan con Python puro y consumen 0 tokens.
 
-(Tokens estimados como caracteres / 3,5.)
+(Tokens medidos con el codificador `o200k_base`, el de `gpt-oss`, y comprobados con el uso que devuelve Groq.)
 
 💡 **Límite de cuota (429) con reintentos y respaldo.** `ChatGroq` se crea con `max_retries=0` y la llamada se envuelve con `tenacity` (`@retry` con backoff exponencial de 2 a 10 s, 2 intentos por modelo). Si el modelo sigue sin cuota, `invocar_con_respaldo` salta al siguiente modelo validado.
 

@@ -32,6 +32,11 @@ from herramientas import pisa_tools
 
 logger = logging.getLogger("pisa.agente")
 
+# El .env se carga al importar, antes de cualquier ejecución: LangSmith decide si traza al empezar la primera y guarda
+# esa decisión, así que si LANGSMITH_TRACING llegara después, no se registraría nada en todo el proceso
+load_dotenv(DIR_AGENTE / ".env")          # agente_pisa/.env aunque se lance desde la raíz del repo
+load_dotenv(find_dotenv(usecwd=True))
+
 
 #Carga de credenciales en el .env
 def obtener_api_key() -> str:

@@ -43,6 +43,8 @@ Una regresión y un XGBoost por edición, estimados con cada valor plausible. El
 - [ ] Opcional: el primer waterfall tarda unos 14 s (importar `shap`). Dibujarlo solo con matplotlib quitaría esa espera y la dependencia de `shap`.
 - [x] Fiabilidad: las métricas están en `modelos.md` (tabla de calidad); no hace falta herramienta.
 - [x] System Prompt: ruta 4 con `get_regression_weights`, unidades, «con lo demás igual», simulación no individual, `modelos` y `robustez`. Ruta 5 con `get_xgboost_patterns` y reglas para diferencias pequeñas y para no inventar explicaciones.
+- [x] Tokens por llamada recortados de 4.200 a ~2.460 (System Prompt de 1.743 a ~940; herramientas de 2.457 a ~1.525). Probadas 9 preguntas, una por ruta, con el modelo principal: entre 4.800 y 6.800 tokens por pregunta, todas por debajo del límite de 8.000 por minuto.
+- [ ] Opcional: las notas de metodología más largas (`modelos`, 2.807 tokens; `compromiso`, 2.140) son ahora lo más caro de una pregunta de metodología.
 - [ ] Probar más preguntas en la app. Probadas con Groq (2026-11-02): peso de compromiso frente a recursos, privados frente a públicos con lo demás igual, simulación de 2 recursos y fiabilidad del privado urbano grande. Con el XGBoost: por qué sacan más los privados, si se aplanan los recursos y qué pesa más en rurales y urbanos. Casi todas con el modelo de respaldo `gpt-oss-20b`, porque el `120b` daba límite de uso; el `120b` interpreta mejor.
 
 ## Etapa 3: cierre
