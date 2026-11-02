@@ -26,13 +26,17 @@ Cuántos recursos para estudiar tiene el alumno en casa. Es una de las dos varia
 - En los 12 países del estudio tienen índice el 98 % de los alumnos en 2012, el 98 % en 2015, el 97 % en 2018 y el
   87 % en 2022. La bajada de 2022 se debe a que las preguntas de libros tienen muchas más respuestas en blanco.
 - Los alumnos sin índice sacan bastante menos nota que la media de su país, así que eliminarlos sesgaría la
-  muestra. Por eso no se rellenan con valores inventados: el modelo añade un indicador de «sin dato».
+  muestra. Aun así, al ser una variable de interés no se rellena con valores inventados: los alumnos sin índice no
+  entran en el modelo, y los resultados describen a los alumnos que respondieron (ver la nota de muestra y
+  limitaciones).
 
 ## Niveles que usa la aplicación
 - «Hasta 4», «5 de 6» y «Los 6». La mayoría de los alumnos tiene casi todos los recursos, por lo que los niveles
   se cortan en la parte alta de la escala.
 
 ## Qué muestran los datos
-- Con el origen social controlado, tener más recursos de estudio se asocia con una nota algo más alta (unos 7 a 9
-  puntos por cada desviación típica), de forma estable en todas las ediciones. Es una asociación, no un efecto
-  causal.
+- Con el origen social controlado y comparando alumnos del mismo país, tener más recursos de estudio se asocia con
+  una nota algo más alta: unos 5 o 6 puntos de matemáticas por cada desviación típica (5,4 en 2012, 5,6 en 2015,
+  4,9 en 2018 y 5,9 en 2022), que equivale aproximadamente a un recurso más. Es estable: el cambio de 2012 a 2022 no
+  se distingue de cero. Es una asociación, no un efecto causal.
+- La relación es creciente pero se aplana cerca del máximo: tener los seis recursos añade poco sobre tener cinco.

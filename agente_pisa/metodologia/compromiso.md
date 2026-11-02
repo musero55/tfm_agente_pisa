@@ -72,3 +72,22 @@ más alto indica más compromiso.
   relación con la nota dentro de cada edición no se ve afectada.
 - El tipo de centro explica muy poco del índice (menos del 1 % de su variación en 2022): el compromiso es sobre
   todo una característica individual del alumno.
+
+## Es un resumen de tres conductas, no un rasgo único
+- Los deberes apenas se relacionan con la asistencia. El índice no mide una sola cualidad que se refleje en las tres
+  conductas: es la media de tres conductas distintas, con el mismo peso. Al explicarlo, conviene decir qué
+  componente hay detrás de cada resultado.
+
+## Cautela: la subida de su relación con la nota viene de los deberes
+- El coeficiente del índice sube algo de 2012 a 2022: de 10,6 a 12,1 puntos de matemáticas por desviación típica
+  (+1,5, p = 0,029). Al repetir el modelo con los tres componentes por separado:
+  - **Absentismo:** haber faltado se asocia a unos 17 o 18 puntos menos, igual en 2012 y en 2022 (sin cambio
+    distinguible de cero).
+  - **Impuntualidad:** cada nivel resta unos 12 puntos en 2012 y unos 10 en 2022; pesa algo menos, pero el cambio
+    apenas se distingue de cero.
+  - **Deberes en el grupo central:** no se asocian a la nota en 2012 (−0,4 puntos) y sí en 2022 (+5,7).
+- La subida del índice viene, por tanto, de los deberes, que es justo el componente que peor se compara entre
+  ediciones (la pregunta cambia y el grupo central pasa del 36 % al 23 % de los alumnos). Puede deberse en parte a
+  cómo se mide, no a un cambio real de la relación.
+- No debe presentarse como un hallazgo firme («el compromiso pesa más en 2022»). Lo que se mantiene estable es la
+  asistencia: faltar a clase y llegar tarde se asocian a bastante menos nota en todas las ediciones.

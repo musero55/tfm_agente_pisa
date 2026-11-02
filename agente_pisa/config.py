@@ -33,7 +33,7 @@ DIR_IMAGENES_TEMP = Path(tempfile.gettempdir()) / "pisa_plots"
 FUENTES = {
     "tabla_modelo": DIR_RAIZ / "data" / "processed" / "tabla_modelo_alumno.parquet",
     "reports": DIR_RAIZ / "reports",
-    # Etapa 2: resultados del modelado (formato en ENTREGA_MODELOS.md)
+    # Resultados del modelado (formato en models/README.md; traducción en README_ARQUITECTURA.md)
     "shap_alumnos": DIR_RAIZ / "models" / "shap_alumnos.parquet",
     "coeficientes_regresion": DIR_RAIZ / "models" / "coeficientes_regresion.csv",
     "metricas_modelos": DIR_RAIZ / "models" / "metricas_modelos.csv",

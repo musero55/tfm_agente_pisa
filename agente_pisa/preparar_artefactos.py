@@ -11,9 +11,10 @@ Ficheros generados:
     img/                     PNG copiados de reports/ y referenciados en el catálogo.
 
 
-Etapa 2, solo si el modelado ha dejado sus resultados en models/ (formato en ENTREGA_MODELOS.md):
+Resultados de los modelos, solo si existen en models/ (formato en models/README.md):
     shap_alumnos.parquet       SHAP del XGBoost de cada alumno, medio entre valores plausibles.
-    coeficientes_regresion.csv Regresión por edición, combinada con las reglas de Rubin.
+    coeficientes_regresion.csv Regresión por edición, combinada con las reglas de Rubin, traducida al formato del
+                               agente (README_ARQUITECTURA.md, sección 10).
     metricas_modelos.csv       R², RMSE y MAE por modelo y edición.
 """
 import shutil
@@ -154,22 +155,31 @@ GRAFICOS_VARIABLES_MODELO = [
 
 # 33 países: descomentar solo si el agente pasa a cubrir también los países fuera del panel
 GRAFICOS_RECURSOS_ALUMNO = [
-    # ("recursos_alumno_saturacion", "01_recursos_alumno_saturacion.png",
-    #  "Porcentaje de alumnos que tiene cada recurso de estudio en casa, por edición (media OCDE)"),
-    # ("recursos_alumno_subindice_estudio", "01_recursos_alumno_subindice_estudio.png",
-    #  "Cuántos recursos de estudio en casa (de 0 a 6) tiene cada alumno"),
+    #Check
+    ("recursos_alumno_saturacion", "01_recursos_alumno_saturacion.png",
+     "Porcentaje de alumnos que tiene cada varaiable que compone el indice de recursos, por edición (media OCDE)"),
+
+    #Check
+    ("recursos_alumno_subindice_estudio", "01_recursos_alumno_subindice_estudio.png",
+     "Cuántos recursos de estudio en casa (de 0 a 6) tiene cada alumno"),
     # ("recursos_alumno_validacion", "01_recursos_alumno_validacion.png",
     #  "Correlación de cada subíndice de recursos del hogar con los índices oficiales de la OCDE"),
     # ("recursos_alumno_sin_subindice", "01_recursos_alumno_sin_subindice.png",
     #  "Porcentaje de alumnos sin cada subíndice de recursos del hogar, por país y edición"),
     # ("recursos_alumno_paises", "01_recursos_alumno_evolucion_pais.png",
     #  "Media de recursos de estudio, riqueza del hogar y libros por país y edición"),
-    # ("recursos_alumno_reparto_varianza", "01_recursos_alumno_reparto_varianza.png",
-    #  "En qué nivel varían los subíndices de recursos del hogar, las notas y el ESCS: entre países, ediciones, centros y alumnos"),
+
+    #Check
+    ("recursos_alumno_reparto_varianza", "01_recursos_alumno_reparto_varianza.png",
+     "En qué nivel varían los subíndices de recursos del hogar, las notas y el ESCS: entre países, ediciones, centros y alumnos"),
+
     # ("recursos_alumno_correlaciones_nota", "01_recursos_alumno_correlaciones_nota.png",
     #  "Correlaciones dentro de cada país entre recursos del hogar, origen social y notas, por edición"),
-    # ("recursos_alumno_nota", "01_recursos_alumno_asociacion_nota.png",
-    #  "Asociación de los recursos del hogar (recursos de estudio, riqueza y libros) con la nota, dentro de cada país y edición"),
+
+    #Check
+    ("recursos_alumno_nota", "01_recursos_alumno_asociacion_nota.png",
+     "Asociación de cada subíndice (recursos de estudio, riqueza, libros) con la nota, dentro de cada país y edición.Con y sin las variables de control"),
+
     # ("recursos_alumno_indices_centro", "01_recursos_alumno_indices_centro.png",
     #  "Porcentaje de alumnos con dato en apoyo del profesor (TEACHSUP) y TIC del centro (ICTSCH), por país y edición"),
     # ("recursos_alumno_irt_dificultades", "01_recursos_alumno_irt_dificultades.png",
@@ -230,13 +240,15 @@ def copiar_graficos() -> pd.DataFrame:
     return pd.DataFrame(filas, columns=["id", "tipo", "ruta", "descripcion"])
 
 
-# Columnas que deben traer los resultados del modelado (ENTREGA_MODELOS.md)
+# Columnas que deben traer los resultados del modelado (models/README.md)
 CLAVES_ALUMNO = ["CNT", "year", "CNTSCHID", "CNTSTUID"]
 TIPOS_CLAVES = {"CNT": str, "year": "int64", "CNTSCHID": "int64", "CNTSTUID": "int64"}   # para unir sin fallos de tipo
 COLUMNAS_SHAP = CLAVES_ALUMNO + ["valor_base", "prediccion"]
-COLUMNAS_COEFICIENTES = ["edicion", "regresion", "estrato", "variable", "coeficiente", "error_tipico", "ic_inf", "ic_sup",
-                         "p_valor", "unidad", "n_alumnos", "n_centros"]
+# El modelado entregó la regresión con otro formato (models/README.md); se traduce al del agente (README_ARQUITECTURA.md, sección 10)
+COLUMNAS_COEFICIENTES = ["edicion", "especificacion", "tipo", "variable", "perfil", "unidad", "coeficiente", "error_tipico",
+                         "ic_inf", "ic_sup", "p_valor", "alumnos", "poco_representativo"]
 COLUMNAS_METRICAS = ["edicion", "modelo", "conjunto", "r2", "rmse", "mae", "n_alumnos"]
+N_PERFILES = 15
 
 
 def _leer_resultado(clave: str, columnas: list[str]) -> pd.DataFrame | None:
@@ -246,7 +258,7 @@ def _leer_resultado(clave: str, columnas: list[str]) -> pd.DataFrame | None:
         return None
     tabla = pd.read_parquet(ruta) if ruta.suffix == ".parquet" else pd.read_csv(ruta)
     faltan = [c for c in columnas if c not in tabla.columns]
-    assert not faltan, f"{ruta.name}: faltan las columnas {faltan} (ver ENTREGA_MODELOS.md)"
+    assert not faltan, f"{ruta.name}: faltan las columnas {faltan} (ver models/README.md)"
     return tabla
 
 
@@ -269,6 +281,46 @@ def preparar_shap(alumnos: pd.DataFrame) -> pd.DataFrame | None:
     numericas = shap.select_dtypes("float64").columns
     shap[numericas] = shap[numericas].astype(np.float32)
     return shap
+
+
+def preparar_coeficientes() -> pd.DataFrame | None:
+    """Traduce la regresión entregada a una fila por edición, regresión (comun o por_perfil), estrato y variable."""
+    coeficientes = _leer_resultado("coeficientes_regresion", COLUMNAS_COEFICIENTES)
+    if coeficientes is None:
+        return None
+    # Unidades originales (las de alumnos_modelo.parquet), con el coeficiente tipificado al lado para comparar variables
+    # entre sí (vacío en las de 0 o 1 y en los efectos de perfil, que no se tipifican); fuera la constante
+    claves = ["edicion", "especificacion", "tipo", "variable", "perfil"]
+    tipificados = (coeficientes[coeficientes["unidad"] == "tipificada"][claves + ["coeficiente"]]
+                   .rename(columns={"coeficiente": "coeficiente_dt"}))
+    coeficientes = coeficientes[(coeficientes["unidad"] == "original") & (coeficientes["variable"] != "constante")]
+    coeficientes = coeficientes.merge(tipificados, on=claves, how="left", validate="one_to_one")
+    comun = coeficientes[coeficientes["especificacion"] == "pendiente_comun"]
+    # Común: coeficientes de todas las variables, y el punto de partida de cada perfil frente a PUB_URB_MED
+    # (solo de esta regresión: con coeficientes iguales en todos los perfiles, es una sola cifra por perfil)
+    comunes = comun[comun["tipo"] == "principal"].assign(regresion="comun", estrato="todos")
+    efectos_perfil = comun[comun["tipo"] == "efecto_fijo_perfil"].assign(regresion="comun", variable="efecto_perfil")
+    efectos_perfil["estrato"] = efectos_perfil["perfil"]
+    # Por perfil: solo los coeficientes por perfil (los controles ya están en la común)
+    por_perfil = coeficientes[coeficientes["tipo"] == "pendiente_perfil"].assign(regresion="por_perfil")
+    por_perfil["estrato"] = por_perfil["perfil"]
+    tabla = pd.concat([comunes, efectos_perfil, por_perfil]).rename(columns={"alumnos": "n_alumnos"})
+    tabla = tabla[["edicion", "regresion", "estrato", "variable", "coeficiente", "error_tipico", "ic_inf", "ic_sup",
+                   "p_valor", "unidad", "coeficiente_dt", "n_alumnos", "poco_representativo"]].reset_index(drop=True)
+
+    assert not tabla.duplicated(["edicion", "regresion", "estrato", "variable"]).any(), \
+        "coeficientes_regresion.csv: coeficientes repetidos tras la traducción"
+    perfiles = tabla[tabla["regresion"] == "por_perfil"].groupby(["edicion", "variable"])["estrato"].nunique()
+    assert (perfiles == N_PERFILES).all(), f"coeficientes_regresion.csv: no todas las pendientes tienen {N_PERFILES} perfiles"
+    return tabla
+
+
+def preparar_metricas() -> pd.DataFrame | None:
+    """Métricas por modelo y edición; la regresión evaluada es la de pendiente por perfil."""
+    metricas = _leer_resultado("metricas_modelos", COLUMNAS_METRICAS)
+    if metricas is None:
+        return None
+    return metricas.replace({"modelo": {"regresion": "regresion_por_perfil"}})
 
 
 def main():
@@ -294,9 +346,7 @@ def main():
     if shap is not None:
         shap.to_parquet(RUTA_SHAP, index=False)
         print(f"{RUTA_SHAP.name}: {len(shap)} alumnos, {RUTA_SHAP.stat().st_size / 1e6:.1f} MB")
-    for clave, columnas, destino in [("coeficientes_regresion", COLUMNAS_COEFICIENTES, RUTA_COEFICIENTES),
-                                     ("metricas_modelos", COLUMNAS_METRICAS, RUTA_METRICAS)]:
-        tabla = _leer_resultado(clave, columnas)
+    for tabla, destino in [(preparar_coeficientes(), RUTA_COEFICIENTES), (preparar_metricas(), RUTA_METRICAS)]:
         if tabla is not None:
             tabla.to_csv(destino, index=False)
             print(f"{destino.name}: {len(tabla)} filas")

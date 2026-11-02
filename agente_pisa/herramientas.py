@@ -5,9 +5,9 @@ Herramientas (Tool Calling) del agente PISA, organizadas en tres vías:
      get_math_stats, calculate_correlation
   b) Contexto estático (sin cálculo): PNG pre-generados y notas de metodología (metodologia/*.md):
      get_context_chart, get_methodology
-  c) Resultados de los modelos (etapa 2, pendiente del modelado), sin cargar ningún modelo: coeficientes de la
-     regresión (peso de cada variable y simulación lineal), SHAP del XGBoost por alumno (interacciones y
-     diferencias por estrato) y métricas. Cada una se añadirá a `pisa_tools` cuando exista su tabla (datos.regresion_disponible(), etc.).
+  c) Resultados de los modelos, sin cargar ningún modelo (cada herramienta entra en `pisa_tools` si existe su tabla):
+     get_regression_weights (coeficientes de la regresión, diferencias entre perfiles y simulación lineal) y
+     get_xgboost_patterns (importancia, contribución y forma a partir de los SHAP del XGBoost de cada alumno).
 
 Todas las cifras son de matemáticas, la nota del alumno en este TFM, en los 12 países del panel común.
 Las medias se ponderan con SENWT: dentro de un país y edición equivale al peso del alumno, y en el panel
@@ -18,6 +18,7 @@ la app la recoge de los ToolMessage, por lo que el LLM no necesita repetirla en 
 """
 import difflib
 import json
+import math
 import unicodedata
 from typing import Literal, Optional, Union
 
@@ -27,9 +28,11 @@ from langchain_core.tools import tool
 
 from config import (
     AVISO_2018_CORTO, AVISO_POCO_REPRESENTATIVO, DIR_METODOLOGIA, NOMBRES_PAISES, PAISES_PANEL, PISA_YEARS,
-    VARIABLES_NUMERICAS, etiqueta,
+    TAMANOS, TIPOS_CENTRO, UBICACIONES, VARIABLES_NUMERICAS, etiqueta,
 )
-from datos import cargar_alumnos, cargar_catalogo_graficos
+from datos import (
+    cargar_alumnos, cargar_catalogo_graficos, cargar_coeficientes, cargar_shap, regresion_disponible, shap_disponible,
+)
 
 # ==========================================================
 #  NORMALIZADORES Y UTILIDADES
@@ -348,6 +351,361 @@ def get_methodology(topic: Literal[TEMAS_METODOLOGIA]) -> str:
 
 
 # ==============================================================================
+# c) RESULTADOS DE LOS MODELOS (sin cargar ningún modelo)
+# ==============================================================================
+
+# Variables de la regresión y unidad de su coeficiente en unidades originales (las de alumnos_modelo)
+UNIDADES_REGRESION = {
+    "Indice_Compromiso_Competencia": "puntos por cada punto más del índice (≈ 1 desviación típica)",
+    "recursos_estudio": "puntos por cada recurso de estudio más (de 0 a 6)",
+    "HISEI_TREND": "puntos por cada punto más de ocupación de los padres (escala de 11 a 89)",
+    "PAREDINT_TREND": "puntos por cada año más de estudios de los padres",
+    "riqueza_hogar": "puntos por cada coche o baño más (de 0 a 6)",
+    "libros": "puntos por cada tramo más de libros en casa (de 1 a 6)",
+    "composicion_social_centro": "puntos por cada punto más del origen social medio del centro (≈ 2 desviaciones típicas)",
+    "dotacion_centro": "puntos por cada punto más de dotación del centro (≈ 1 desviación típica)",
+    "sexo_femenino": "puntos de las chicas frente a los chicos",
+    "inmigrante": "puntos de los inmigrantes frente a los nativos",
+}
+NOMBRES_REGRESION = {**VARIABLES_NUMERICAS, "sexo_femenino": "Chica (frente a chico)",
+                     "inmigrante": "Inmigrante (frente a nativo)"}
+SINONIMOS_REGRESION = {
+    **{col: lista for col, lista in SINONIMOS_VARIABLES.items() if col != "nota"},
+    "sexo_femenino": ["sexo", "chica", "chicas", "genero", "mujer", "mujeres"],
+    "inmigrante": ["inmigrante", "inmigrantes", "inmigracion", "origen"],
+    "efecto_perfil": ["perfil", "perfiles", "perfil de centro", "tipo de centro", "centro", "estrato", "estratos fijos"],
+}
+VARIABLES_POR_PERFIL = ("Indice_Compromiso_Competencia", "recursos_estudio")   # las únicas con coeficiente por perfil
+PERFIL_REFERENCIA = "PUB_URB_MED"
+# Cambio máximo con sentido en una simulación: el recorrido de la variable en los datos
+RECORRIDO = {"Indice_Compromiso_Competencia": 3.6, "recursos_estudio": 6, "HISEI_TREND": 78, "PAREDINT_TREND": 13,
+             "riqueza_hogar": 6, "libros": 5, "composicion_social_centro": 3.7, "dotacion_centro": 8.3,
+             "sexo_femenino": 1, "inmigrante": 1}
+# Resultados que no aguantan las comprobaciones de robustez (metodologia/robustez.md): se avisan en la propia salida
+# cuando la consulta incluye las ediciones indicadas. (variable, estrato) -> (ediciones, aviso)
+AVISOS_FRAGILES = {
+    ("recursos_estudio", "PRI_URB_MACRO"): ({2022}, "Resultado frágil: el salto de 2022 en el privado urbano grande "
+        "depende de Australia; sin Australia no se distingue de cero (nota de robustez)"),
+    ("Indice_Compromiso_Competencia", "todos"): ({2012, 2022}, "Resultado frágil: la subida del compromiso de 2012 a "
+        "2022 viene de los deberes y deja de distinguirse de cero al quitar algunos países (nota de robustez)"),
+}
+AVISOS_SIMULACION = {
+    "recursos_estudio": "cuenta lineal: cerca de 6 recursos la ganancia real es menor (efecto techo)",
+    "Indice_Compromiso_Competencia": "el índice solo toma 12 valores, de -2,1 a 1,5: el cambio debe caber en ese rango",
+}
+
+
+def _variable_regresion(variable: str) -> str:
+    """Variable de la regresión a partir de su nombre o de un sinónimo ('perfil' = diferencia entre perfiles)."""
+    if variable in SINONIMOS_REGRESION:
+        return variable
+    texto = _sin_acentos(variable)
+    todos = {s: col for col, lista in SINONIMOS_REGRESION.items() for s in lista}
+    if texto in todos:
+        return todos[texto]
+    parecido = difflib.get_close_matches(texto, list(todos), n=1, cutoff=0.6)
+    if parecido:
+        return todos[parecido[0]]
+    raise ValueError(f"Variable '{variable}' no está en la regresión. Usa: compromiso, recursos, ocupacion, "
+                     "estudios padres, riqueza, libros, composicion social, dotacion, sexo, inmigrante o perfil.")
+
+
+def _perfiles(tipo_centro, ubicacion, tamano) -> Optional[list[str]]:
+    """Códigos de perfil (PUB_URB_MED...) que cumplen los filtros; None si no se filtra."""
+    elegidos = [normalizar_valor("tipo_centro", tipo_centro), normalizar_valor("ubicacion", ubicacion),
+                normalizar_valor("tamano", tamano)]
+    if not any(elegidos):
+        return None
+    catalogos = [TIPOS_CENTRO, UBICACIONES, TAMANOS]
+    codigos = [f"{t}_{u}_{m}" for t in TIPOS_CENTRO for u in UBICACIONES for m in TAMANOS]
+    return [c for c in codigos
+            if all(e is None or catalogo[parte] == e for catalogo, parte, e in zip(catalogos, c.split("_"), elegidos))]
+
+
+def _p(valor: float):
+    """p-valor legible: los muy pequeños como '<0.001' (con 0.0 el modelo escribiría «p = 0»)."""
+    return "<0.001" if valor < 0.001 else _r(valor, 3)
+
+
+def _nombre_perfil(codigo: str) -> str:
+    tipo, ubicacion, tamano = codigo.split("_")
+    return f"{TIPOS_CENTRO[tipo]} {UBICACIONES[ubicacion].lower()} {TAMANOS[tamano].lower()}"
+
+
+def _bloque(filas: pd.DataFrame, cambio: Optional[float]) -> dict:
+    """Coeficiente con intervalo y p de cada edición; con varias, también el cambio de 2012 a 2022."""
+    def fila(f) -> dict:
+        datos = {"coef": _r(f.coeficiente), "ic": [_r(f.ic_inf), _r(f.ic_sup)], "p": _p(f.p_valor)}
+        if cambio is not None:
+            datos["cambio_total_nota"] = _r(f.coeficiente * cambio)
+            datos["ic_cambio_total"] = sorted([_r(f.ic_inf * cambio), _r(f.ic_sup * cambio)])
+        return datos
+
+    por_edicion = {int(f.edicion): fila(f) for f in filas.itertuples()}
+    if len(por_edicion) == 1:
+        return next(iter(por_edicion.values()))
+    extremos = filas.set_index("edicion")
+    if {2012, 2022} <= set(extremos.index):
+        diferencia = extremos.loc[2022, "coeficiente"] - extremos.loc[2012, "coeficiente"]
+        # Muestras independientes: el error del cambio combina los de las dos ediciones
+        error = math.hypot(extremos.loc[2012, "error_tipico"], extremos.loc[2022, "error_tipico"])
+        por_edicion["cambio_2012_2022"] = {"dif": _r(diferencia),
+                                           "p": _p(math.erfc(abs(diferencia / error) / math.sqrt(2)))}
+    return por_edicion
+
+
+@tool
+def get_regression_weights(variable: Optional[str] = None, year: Union[int, str] = 2022,
+                           tipo_centro: Optional[str] = None, ubicacion: Optional[str] = None,
+                           tamano: Optional[str] = None, cambio: Optional[float] = None) -> str:
+    """
+    Results of the project's linear regression of the math score (one per edition). Coefficients compare students of
+    the same country and school profile with the same social background; they are associations, not causal effects.
+    - No variable: weight of every variable in one edition, ranked by 'por_desv_tipica' (points per standard
+      deviation, the fair way to compare variables; 'coef' is in each variable's own unit).
+    - variable: 'compromiso', 'recursos', 'ocupacion', 'estudios padres', 'riqueza', 'libros', 'composicion social',
+      'dotacion', 'sexo' or 'inmigrante'. Add tipo_centro/ubicacion/tamano ('estratos fijos') to get the coefficient
+      inside those school profiles (only 'compromiso' and 'recursos' have one per profile).
+    - variable='perfil': score difference of each school profile versus public urban medium schools, with everything
+      else equal. Not the raw difference in mean scores. Use only the filters the user mentions: for "private vs
+      public" pass no filter, so that all profiles (public ones included) can be compared.
+    - cambio: linear simulation, e.g. variable='recursos', cambio=2 -> 'cambio_total_nota' = total score change for
+      2 more study resources, with its own interval 'ic_cambio_total' ('coef' and 'ic' stay per unit).
+    - year: 2012, 2015, 2018, 2022 or 'all'. For any "has it changed?" question use year='all' in a single call:
+      it returns every edition and the 2012-2022 change with its p-value.
+    """
+    try:
+        coeficientes = cargar_coeficientes()
+        years = _years(year)
+        coeficientes = coeficientes[coeficientes["edicion"].isin(years)]
+        perfiles = _perfiles(tipo_centro, ubicacion, tamano)
+        avisos = [AVISO_2018_CORTO] if 2018 in years else []
+        comun = coeficientes[coeficientes["regresion"] == "comun"]
+
+        # Sin variable: peso de todas, ordenadas por puntos por desviación típica (una sola edición)
+        if not variable:
+            edicion = years[-1]
+            filas = comun[(comun["edicion"] == edicion) & (comun["estrato"] == "todos")
+                          & comun["variable"].isin(UNIDADES_REGRESION)]
+            filas = filas.reindex(filas["coeficiente_dt"].abs().sort_values(ascending=False, na_position="last").index)
+            salida = {"edicion": edicion, "variables": [
+                {"variable": NOMBRES_REGRESION[f.variable], "por_desv_tipica": _r(f.coeficiente_dt), "coef": _r(f.coeficiente),
+                 "unidad": UNIDADES_REGRESION[f.variable], "p": _p(f.p_valor)} for f in filas.itertuples()]}
+            if len(years) > 1:
+                avisos.append("Peso de todas las variables solo de 2022; para la evolución, pedir cada variable con year='all'")
+            if avisos:
+                salida["avisos"] = avisos
+            return _json(salida)
+
+        columna = _variable_regresion(variable)
+        salida = {"edicion": "2012-2022" if len(years) > 1 else years[0]}
+
+        if columna == "efecto_perfil":
+            # Diferencia de nota de cada perfil frente al de referencia, con lo demás igual
+            filas = comun[comun["variable"] == "efecto_perfil"]
+            if perfiles is not None:
+                filas = filas[filas["estrato"].isin(perfiles)]
+            salida["referencia"] = f"{_nombre_perfil(PERFIL_REFERENCIA)} (diferencia 0 por definición)"
+            salida["unidad"] = "puntos de diferencia frente a la referencia, con alumnos iguales en todo lo demás"
+            salida["por_perfil"] = {_nombre_perfil(p): _bloque(g, None) for p, g in filas.groupby("estrato")}
+            if cambio is not None:
+                avisos.append("La simulación no se aplica a la diferencia entre perfiles")
+        else:
+            salida["variable"] = NOMBRES_REGRESION[columna]
+            salida["unidad"] = UNIDADES_REGRESION[columna]
+            if cambio is not None:
+                if abs(cambio) > RECORRIDO[columna]:
+                    return _error(f"Un cambio de {cambio} se sale del recorrido de la variable (máximo {RECORRIDO[columna]}).")
+                salida["cambio_simulado"] = cambio
+                if columna in AVISOS_SIMULACION:
+                    avisos.append(AVISOS_SIMULACION[columna])
+            filas_comun = comun[(comun["variable"] == columna) & (comun["estrato"] == "todos")]
+            if perfiles is not None and columna in VARIABLES_POR_PERFIL:
+                # Lo pedido (el perfil) va primero; el común queda detrás, solo para comparar
+                filas = coeficientes[(coeficientes["regresion"] == "por_perfil") & (coeficientes["variable"] == columna)
+                                     & coeficientes["estrato"].isin(perfiles)]
+                salida["por_perfil"] = {_nombre_perfil(p): _bloque(g, cambio) for p, g in filas.groupby("estrato")}
+                salida["para_comparar_todos_los_perfiles"] = _bloque(filas_comun, cambio)
+            else:
+                filas = filas_comun
+                salida["coeficiente_comun"] = _bloque(filas_comun, cambio)
+            if perfiles is not None and columna not in VARIABLES_POR_PERFIL:
+                avisos.append(f"{NOMBRES_REGRESION[columna]} tiene un solo coeficiente para todos los perfiles: "
+                              "solo el compromiso y los recursos tienen uno por perfil")
+
+        avisos += [aviso for (var, estrato), (ediciones, aviso) in AVISOS_FRAGILES.items()
+                   if var == columna and estrato in set(filas["estrato"]) and ediciones <= set(years)]
+        pocos = sorted({_nombre_perfil(p) for p in filas.loc[filas["poco_representativo"] == True, "estrato"]
+                        if p != "todos"})
+        if pocos:
+            avisos.append(f"Perfiles con menos de 30 centros en alguna edición (poco fiables): {', '.join(pocos)}")
+        if avisos:
+            salida["avisos"] = avisos
+        return _json(salida)
+    except Exception as e:
+        return _error(f"Regresión: {e}")
+
+
+# Variables del XGBoost: columna shap_<variable> -> nombre legible y columna de alumnos_modelo con su valor
+NOMBRES_SHAP = {**VARIABLES_NUMERICAS, "sexo_femenino": "Sexo", "inmigrante": "Origen inmigrante",
+                "perfil_categoria": "Perfil del centro", "pais_categoria": "País"}
+COLUMNA_VALOR = {"sexo_femenino": "sexo", "inmigrante": "origen", "perfil_categoria": "perfil", "pais_categoria": "CNT"}
+CLAVES_ALUMNO = ["CNT", "year", "CNTSCHID", "CNTSTUID"]
+TIPOS_CLAVES = {"CNT": str, "year": "int64", "CNTSCHID": "int64", "CNTSTUID": "int64"}   # los de shap_alumnos
+DIFERENCIA_NOTABLE = 2   # puntos de importancia entre grupos; por debajo, el patrón se considera igual
+GRUPO_PEQUENO = 5000   # por debajo, el XGBoost apenas distingue patrones propios del grupo (03_xgboost_shap)
+AVISO_GRUPO_PEQUENO = ("Grupo pequeño: el XGBoost no distingue bien patrones propios de grupos o perfiles pequeños; "
+                       "para diferencias entre perfiles, usar la regresión")
+
+
+def _alumnos_con_shap(year, CNT, **filtros) -> tuple[pd.DataFrame, dict, list[str], list[str]]:
+    """Alumnos filtrados con sus SHAP. Devuelve (datos, filtros, avisos, variables del modelo)."""
+    df, aplicados, avisos = filtrar_alumnos(year, CNT, **filtros)
+    shap = cargar_shap()
+    df = df.astype(TIPOS_CLAVES).merge(shap, on=CLAVES_ALUMNO, how="inner")
+    variables = [c.removeprefix("shap_") for c in shap.columns if c.startswith("shap_")]
+    if any(aplicados.get(c) for c in ("tipo_centro", "ubicacion", "tamano")) and len(df) < GRUPO_PEQUENO:
+        avisos.append(AVISO_GRUPO_PEQUENO)
+    return df, aplicados, avisos, variables
+
+
+def _medias_shap(df: pd.DataFrame, variables: list[str], absoluto: bool) -> pd.Series:
+    """Media ponderada con SENWT del SHAP (o de su valor absoluto) de cada variable."""
+    valores = df[[f"shap_{v}" for v in variables]]
+    valores = valores.abs() if absoluto else valores
+    pesos = df["SENWT"].to_numpy(dtype=float)
+    return pd.Series((valores.to_numpy(dtype=float) * pesos[:, None]).sum(axis=0) / pesos.sum(), index=variables)
+
+
+def _valor_medio(df: pd.DataFrame, variable: str):
+    """Valor típico del grupo en una variable, para el waterfall y la respuesta."""
+    columna = COLUMNA_VALOR.get(variable, variable)
+    if variable in ("sexo_femenino", "inmigrante"):
+        categoria = "Chica" if variable == "sexo_femenino" else "Inmigrante"
+        pesos = df["SENWT"]
+        return f"{100 * pesos[df[columna] == categoria].sum() / pesos.sum():.0f} % {categoria.lower()}s"
+    if variable in ("perfil_categoria", "pais_categoria"):
+        unicos = df[columna].astype(str).unique()
+        if len(unicos) > 1:
+            return "varios"
+        return _nombre_perfil(unicos[0]) if variable == "perfil_categoria" else NOMBRES_PAISES.get(unicos[0], unicos[0])
+    return _r(media_ponderada(df, columna))
+
+
+@tool
+def get_xgboost_patterns(
+    analisis: Literal["importancia", "contribucion", "forma"] = "importancia", year: Union[int, str] = 2022,
+    variable: Optional[str] = None, CNT: Optional[str] = None,
+    tipo_centro: Optional[str] = None, ubicacion: Optional[str] = None, tamano: Optional[str] = None,
+    compromiso: Optional[str] = None, recursos: Optional[str] = None, sexo: Optional[str] = None,
+    origen: Optional[str] = None,
+    group_by: Optional[Literal["tipo_centro", "ubicacion", "tamano", "compromiso", "recursos", "sexo", "origen",
+                               "pais", "edicion"]] = None,
+) -> str:
+    """
+    What the XGBoost model learned, from each student's SHAP values (points of math score). Descriptive patterns, not
+    causal effects; for the effect per unit of a variable use get_regression_weights.
+    - analisis='importancia': how many points each variable moves the prediction on average, ranked. With filters, for
+      that group; with group_by, compared between groups; with year='all', its evolution. It has no direction and is
+      not a coefficient.
+    - analisis='contribucion': why the predicted score of the students in the filters is above or below the average
+      student of the edition: the mean SHAP of each variable (one edition). The interface shows a waterfall chart.
+    - analisis='forma': shape of the relationship of one variable ('recursos', 'compromiso', 'libros'...) with the
+      score: mean SHAP for each value, to see ceilings and non-linear patterns.
+    - Filters as in get_math_stats.
+    """
+    try:
+        filtros = dict(tipo_centro=tipo_centro, ubicacion=ubicacion, tamano=tamano, nivel_compromiso=compromiso,
+                       nivel_recursos=recursos, sexo=sexo, origen=origen)
+        años = _years(year)
+        solo_2022 = analisis == "contribucion" and len(años) > 1   # la contribución es de una sola edición
+        if solo_2022:
+            year, años = 2022, [2022]
+        df, aplicados, avisos, variables = _alumnos_con_shap(year, CNT, **filtros)
+        if df.empty:
+            return _error("No hay alumnos con esos filtros.")
+        salida = {"analisis": analisis, "ambito": aplicados.pop("pais", "panel de 12 países"),
+                  "edicion": "2012-2022" if len(años) > 1 else años[0], "filtros": aplicados, "n_alumnos": len(df)}
+
+        if analisis == "importancia":
+            columna_grupo = GRUPOS[group_by] if group_by else ("year" if len(años) > 1 else None)
+            orden = _medias_shap(df, variables, absoluto=True).sort_values(ascending=False)
+            if columna_grupo is None:
+                salida["puntos_que_mueve"] = {NOMBRES_SHAP[v]: _r(x) for v, x in orden.items()}
+            else:
+                grupos = {(int(c) if columna_grupo == "year" else str(c)): _medias_shap(g, variables, absoluto=True)
+                          for c, g in df.groupby(columna_grupo, observed=True)}
+                salida["puntos_que_mueve"] = {NOMBRES_SHAP[v]: {c: _r(m[v]) for c, m in grupos.items()}
+                                              for v in orden.index}
+                # Conclusión ya calculada: los modelos pequeños tienden a leer como diferencias unas décimas
+                rango = pd.DataFrame(grupos).agg(lambda fila: fila.max() - fila.min(), axis=1)
+                notables = [NOMBRES_SHAP[v] for v in orden.index if rango[v] >= DIFERENCIA_NOTABLE]
+                salida["diferencias_de_mas_de_2_puntos"] = notables or "ninguna: el patrón es casi igual en todos los grupos"
+            salida["nota"] = "media del valor absoluto del SHAP: cuánto mueve la predicción, sin dirección"
+
+        elif analisis == "contribucion":
+            medias = _medias_shap(df, variables, absoluto=False)
+            medias = medias.reindex(medias.abs().sort_values(ascending=False).index)
+            valor_base = float(df["valor_base"].iloc[0])
+            salida.update({
+                "prediccion_media_edicion": _r(valor_base), "prediccion_media_grupo": _r(media_ponderada(df, "prediccion")),
+                "nota_media_grupo": _r(media_ponderada(df, "nota")),
+                "contribuciones": {NOMBRES_SHAP[v]: {"puntos": _r(x), "valor_del_grupo": _valor_medio(df, v)}
+                                   for v, x in medias.items()},
+                "nota": "puntos que suma o resta cada variable frente a la predicción media de la edición",
+            })
+            from graficos import guardar_waterfall   # import diferido: shap y matplotlib solo cuando se dibuja
+            titulo = ", ".join([str(salida["ambito"])] + [str(v) for v in aplicados.values()])
+            salida["imagen"] = guardar_waterfall(
+                medias.rename(NOMBRES_SHAP), pd.Series({NOMBRES_SHAP[v]: _valor_medio(df, v) for v in medias.index}),
+                valor_base, f"{titulo[0].upper() + titulo[1:]} ({años[0]})", max_variables=len(medias))
+            if solo_2022:
+                avisos.append("La contribución se calcula con una sola edición: se usa 2022")
+
+        else:   # forma
+            if not variable:
+                return _error("Para la forma de la relación hace falta una variable ('recursos', 'compromiso'...).")
+            nombre = _variable_regresion(variable)
+            if nombre not in variables:
+                return _error(f"'{variable}' no tiene forma: elige una variable del alumno o del centro.")
+            columna = COLUMNA_VALOR.get(nombre, nombre)
+            valores = df[columna]
+            if nombre == "recursos_estudio":   # respuestas parciales reescaladas (4,8...): al entero, como 03_xgboost_shap
+                valores = np.floor(valores + 0.5)
+            if pd.api.types.is_numeric_dtype(valores) and valores.nunique() > 13:   # continuas: quintiles
+                tramos = pd.qcut(valores, 5, duplicates="drop")
+                orden = tramos.cat.codes.astype(float)
+                etiquetas = tramos.map(lambda t: f"de {_r(t.left)} a {_r(t.right)}", na_action="ignore").astype(object)
+            elif pd.api.types.is_numeric_dtype(valores):                            # pocos valores: uno a uno
+                orden = valores.astype(float).round(2)
+                etiquetas = orden.map(lambda v: str(int(v)) if v.is_integer() else str(v)).astype(object)
+            else:                                                                   # sexo, origen
+                orden, etiquetas = pd.Series(0.0, index=df.index), valores.astype(str).astype(object)
+            df = df.assign(_orden=orden.where(valores.notna(), np.inf),
+                           _valor=etiquetas.where(valores.notna(), "sin dato"))
+
+            def media(g: pd.DataFrame):
+                return _r(float(np.average(g[f"shap_{nombre}"], weights=g["SENWT"])))
+
+            forma = {}
+            for (_, valor), g in df.groupby(["_orden", "_valor"], sort=True):
+                forma[str(valor)] = ({int(y): media(gy) for y, gy in g.groupby("year")} if len(años) > 1
+                                     else {"puntos": media(g), "alumnos": len(g)})
+            salida["variable"] = NOMBRES_SHAP[nombre]
+            salida["puntos_por_valor"] = forma
+            salida["nota"] = "SHAP medio de los alumnos con cada valor: puntos que suma o resta tenerlo"
+            if nombre == "Indice_Compromiso_Competencia":
+                avisos.append("El índice solo toma 12 valores y combina tres conductas: dos valores cercanos pueden ser "
+                              "combinaciones distintas (faltar a clase pesa más que los deberes)")
+
+        if avisos:
+            salida["avisos"] = avisos
+        return _json(salida)
+    except Exception as e:
+        return _error(f"XGBoost: {e}")
+
+
+# ==============================================================================
 # LISTA DE HERRAMIENTAS EXPORTADAS
 # ==============================================================================
 pisa_tools = [
@@ -355,5 +713,9 @@ pisa_tools = [
     get_math_stats, calculate_correlation,
     # b) Contexto estático
     get_context_chart, get_methodology,
-    # c) Simulación con los modelos: se añadirá en la etapa 2 (regresión + XGBoost)
 ]
+# c) Resultados de los modelos: cada herramienta entra si existe su tabla
+if regresion_disponible():
+    pisa_tools.append(get_regression_weights)
+if shap_disponible():
+    pisa_tools.append(get_xgboost_patterns)

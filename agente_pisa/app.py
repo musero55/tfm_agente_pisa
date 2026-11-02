@@ -37,6 +37,9 @@ DESCRIPCION_TOOLS = {
     "get_math_stats": "Calculando medias por grupo",
     "calculate_correlation": "Calculando correlación",
     "get_context_chart": "Recuperando gráfico de contexto",
+    "get_methodology": "Consultando la metodología",
+    "get_regression_weights": "Consultando el modelo de regresión",
+    "get_xgboost_patterns": "Consultando los patrones del XGBoost",
 }
 
 

@@ -13,6 +13,9 @@ agente_pisa/.streamlit/secrets.toml
 .ipynb_checkpoints/
 __pycache__/
 
+# Resúmenes de los cuadernos (de uso personal)
+reports/resumenes/
+
 
 #Formatos 
 *.xlsx

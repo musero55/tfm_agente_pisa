@@ -45,5 +45,8 @@
 - **Deberes entre ediciones:** la pregunta cambia en cada edición, así que la evolución del índice de compromiso en
   el tiempo debe leerse sobre todo a través de la asistencia.
 - **Sesgo de respuesta:** quienes no responden sacan menos nota; los resultados valen para los alumnos con datos.
+  Los pesos de PISA no lo corrigen: compensan a los alumnos y centros que no participan, no a los que participan y
+  dejan preguntas en blanco. La diferencia puede deberse en parte a la comprensión lectora, al cansancio o al
+  esfuerzo al responder el cuestionario, y no solo a tener menos recursos.
 - **Pocos países:** 12 países de la OCDE, en su mayoría europeos; los resultados no se pueden generalizar a otros
   sistemas educativos sin más.

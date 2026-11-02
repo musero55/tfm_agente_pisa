@@ -1,46 +1,67 @@
 # Requisitos pendientes del agente PISA
 
-Checklist de lo que el agente necesita de las fases que aún no están cerradas. Cada punto indica qué fichero espera la arquitectura y qué hay que tocar. Después de cualquier cambio en los datos o las imágenes, basta con ejecutar `python agente_pisa/preparar_artefactos.py`.
+Checklist de lo que falta para cerrar el agente. Cada punto indica qué fichero hay que tocar. Después de cualquier cambio en los datos o las imágenes, basta con ejecutar `python agente_pisa/preparar_artefactos.py`.
+
+El agente sirve para entender el proyecto y analizar sus resultados, así que tiene que conocer las decisiones metodológicas: todo lo que explique sale de `metodologia/` (un `.md` nuevo basta para que `get_methodology` lo vea).
 
 ## Etapa 1: hecha
 
 - [x] Estadísticas descriptivas sobre `data/processed/tabla_modelo_alumno.parquet`: solo matemáticas, 12 países y alumnos `en_modelo`.
 - [x] Filtros y comparaciones por `estratos fijos`, nivel de compromiso, recursos de estudio, sexo, origen, país y edición.
 - [x] Aviso de la limitación de 2018 en las herramientas, la interfaz y el System Prompt.
-- [x] Galería con 4 gráficos de ejemplo de `reports/`.
+- [x] Galería con gráficos de ejemplo de `reports/`.
 
 ## Etapa 2: modelos (regresión y XGBoost)
 
-Una regresión y un XGBoost por edición, estimados con cada valor plausible. El agente no carga ningún modelo: solo sus resultados, que el modelado deja en `models/` con el formato de `ENTREGA_MODELOS.md`.
+Una regresión y un XGBoost por edición, estimados con cada valor plausible. El agente no carga ningún modelo: solo sus resultados.
 
-**Entrega del modelado** (`ENTREGA_MODELOS.md`)
-- [ ] `models/shap_alumnos.parquet`: SHAP del XGBoost de cada alumno, medio entre los valores plausibles de su edición, con valor base y predicción.
-- [ ] `models/coeficientes_regresion.csv`: la regresión global y la regresión por perfil (variables × indicador de cada perfil) en una tabla, combinadas con las reglas de Rubin.
-- [ ] `models/metricas_modelos.csv`: R², RMSE y MAE por modelo y edición.
-- [ ] Ejecutar `preparar_artefactos.py`: comprueba el formato (y que valor base + SHAP = predicción), se queda con los alumnos del agente y copia las tres tablas a `artefactos/`. `datos.py` ya las carga.
+**Entrega del modelado: hecha** (commit `0f02e7f`)
+- [x] `models/shap_alumnos.parquet`: coincide con el formato pedido (298.782 alumnos; SHAP calculados sobre todos, no solo test).
+- [x] `models/coeficientes_regresion.csv`: llegó con otro formato; `preparar_artefactos.py` lo traduce (`ADAPTACION_MODELOS.md`).
+- [x] `models/metricas_modelos.csv`: solo de la regresión por perfil y del XGBoost, con validación cruzada por centro.
+- [x] `preparar_artefactos.py` ejecutado: las tres tablas ya están en `artefactos/` y `datos.py` las carga.
+
+**Metodología de los modelos** (sin esto el agente no sabe leer sus propias cifras)
+- [x] `robustez.md`: qué resultados aguantan las comprobaciones y cuáles no.
+- [x] Cautelas añadidas en `compromiso.md` (la subida viene de los deberes), `perfiles_centro.md` (privado urbano grande = Australia) y `recursos_estudio.md` (cifras del modelo).
+- [x] `metodologia/modelos.md`: las dos regresiones y cómo se lee un coeficiente, unidades, fiabilidad, XGBoost y SHAP, métricas y cómo usarlo en las respuestas.
+- [x] Se recuperan los efectos fijos de perfil de la común (`variable = "efecto_perfil"`, con el perfil en `estrato`): diferencia de nota frente a `PUB_URB_MED` con lo demás igual. Explicado en `modelos.md`.
+- [x] La regresión «global» de la traducción pasa a llamarse `comun`, como la de Alberto (`pendiente_comun`): compara alumnos del mismo país y perfil.
 
 **Herramientas nuevas** (cada una se activa con su tabla: `datos.regresion_disponible()`, `shap_disponible()`, `metricas_disponibles()`)
-- [ ] `get_regression_weights(variable, edicion, estrato)`: peso de cada variable y su significación, por edición. Sin estrato, la regresión global; con estrato, la regresión por perfil. Avisar si el perfil tiene pocos centros. Si los coeficientes están tipificados, `data/processed/parametros_escala.parquet` permite traducirlos a unidades originales («por cada recurso de estudio más...»).
-- [ ] Simulación lineal con la regresión: «con 2 recursos más, la nota cambia 2 × coeficiente».
-- [ ] Explicación de un perfil: waterfall con la media de los SHAP de los alumnos reales de ese perfil (o con coeficiente × distancia a la media). `graficos.guardar_waterfall` ya lo dibuja.
-- [ ] Patrones del XGBoost agrupando la tabla de SHAP: importancia por `estratos fijos`, origen social, nivel de compromiso o de recursos; interacciones y no linealidades.
-- [ ] Fiabilidad: citar las métricas de cada modelo y si el XGBoost mejora a la regresión (si no, los efectos son casi lineales).
-- [ ] System Prompt: describir las herramientas, que la edición elige el modelo (no se simula «este alumno en otra edición») y que son asociaciones, no efectos causales.
-
-**Gráficos de los modelos**, que `preparar_artefactos.py` puede generar con las tablas de la entrega:
-- [ ] Coeficientes de la regresión con sus intervalos (gráfico de bosque).
-- [ ] Beeswarm SHAP global del XGBoost.
-- [ ] Dependence plots del índice de compromiso y de los recursos de estudio, coloreados por el origen social, para ver interacciones.
-- [ ] Importancia SHAP media por `estratos fijos`, para preguntas como «qué pesa más en los centros rurales».
-- [ ] Importancia SHAP y coeficientes por edición.
+- [x] `get_regression_weights(variable, year, tipo_centro, ubicacion, tamano, cambio)` en `herramientas.py`:
+  - sin variable, el peso de todas ordenado por puntos por desviación típica (columna `coeficiente_dt`, añadida a la tabla);
+  - una variable: coeficiente común con intervalo y p; con filtros de perfil, el de cada perfil (solo compromiso y recursos);
+  - `variable='perfil'`: diferencia frente a `PUB_URB_MED` con lo demás igual;
+  - `cambio`: simulación lineal con su intervalo; `year='all'`: evolución y cambio 2012-2022 con su p;
+  - avisos de 2018, perfiles poco representativos y los dos resultados frágiles de `robustez.md` (Australia y subida del compromiso).
+- [x] `get_xgboost_patterns(analisis, year, variable, filtros, group_by)` en `herramientas.py`, con los SHAP de cada alumno:
+  - `importancia`: puntos que mueve cada variable, en un grupo, entre grupos o entre ediciones; calcula qué variables difieren más de 2 puntos entre grupos (si no, «el patrón es casi igual»);
+  - `contribucion`: por qué la predicción de un grupo está por encima o por debajo de la media, con waterfall (`graficos.guardar_waterfall`);
+  - `forma`: SHAP medio por valor (recursos redondeados al entero, como `03_xgboost_shap`; variables continuas por quintiles);
+  - aviso cuando se filtra por perfil y el grupo tiene menos de 5.000 alumnos (el XGBoost no ve patrones de grupos pequeños).
+- [ ] Opcional: el primer waterfall tarda unos 14 s (importar `shap`). Dibujarlo solo con matplotlib quitaría esa espera y la dependencia de `shap`.
+- [x] Fiabilidad: las métricas están en `modelos.md` (tabla de calidad); no hace falta herramienta.
+- [x] System Prompt: ruta 4 con `get_regression_weights`, unidades, «con lo demás igual», simulación no individual, `modelos` y `robustez`. Ruta 5 con `get_xgboost_patterns` y reglas para diferencias pequeñas y para no inventar explicaciones.
+- [ ] Probar más preguntas en la app. Probadas con Groq (2026-11-02): peso de compromiso frente a recursos, privados frente a públicos con lo demás igual, simulación de 2 recursos y fiabilidad del privado urbano grande. Con el XGBoost: por qué sacan más los privados, si se aplanan los recursos y qué pesa más en rurales y urbanos. Casi todas con el modelo de respaldo `gpt-oss-20b`, porque el `120b` daba límite de uso; el `120b` interpreta mejor.
 
 ## Etapa 3: cierre
 
-- [ ] Imágenes definitivas: cuando estén en `reports/`, actualizar la lista `GRAFICOS_CONTEXTO` de `preparar_artefactos.py` (fichero y descripción; el agente elige la imagen leyendo la descripción).
-- [ ] Marco teórico: completar el bloque marcado en `system_prompt.md` cuando el informe esté cerrado (unos 300 a 500 tokens).
-- [ ] Evaluador: los casos de `evaluador/reference_test.py` son del bloque exploratorio de 33 países, ahora en `anexo/`, y piden herramientas que ya no existen. Hay que rehacerlos con preguntas de la línea actual: `estratos fijos`, compromiso, recursos, países del panel y el aviso de 2018.
-- [x] Despliegue en Streamlit Cloud: subir `agente_pisa/artefactos/`, configurar la app y el secreto `GROQ_API_KEY` (pasos en `README_ARQUITECTURA.md`, sección 8).
+- [ ] Imágenes, al redactar la memoria: actualizar las listas de `preparar_artefactos.py` (el agente elige la imagen leyendo la descripción). Incluye:
+  - Los gráficos de modelado: ya existen en `reports/` (13 PNG `03_*.png`), no hace falta generarlos. Añadir una lista `GRAFICOS_MODELADO` e incluirla en el bucle de `copiar_graficos()`. Mínimo: `03_regresion_pendiente_comun`, `03_regresion_pendientes_perfil`, `03_regresion_cambio_perfil`, `03_robustez_resumen`, `03_robustez_sin_cada_pais`, `03_australia_pendientes`, `03_xgboost_importancia`, `03_xgboost_forma_relacion`.
+  - `GRAFICOS_RECURSOS_ALUMNO`: 4 gráficos descomentados (`#Check`) que no se copian, porque esa lista no está en el bucle de `copiar_graficos()`. Son de 33 países («media OCDE»): añadirlos diciéndolo en la descripción, o volver a comentarlos.
+- [ ] Marco teórico: escribirlo como nota `metodologia/marco_teorico.md` cuando el informe esté cerrado. El System Prompt ya no tiene el bloque reservado (se quitó en `e8855de`), y así no gasta tokens en cada llamada.
+- [ ] Evaluador: `evaluador/reference_test.py` está vacío. Escribir casos de la línea actual: `estratos fijos`, compromiso, recursos, países del panel, aviso de 2018, preguntas de metodología y, ya con modelos, coeficientes, unidades y fiabilidad.
+- [x] `README_ARQUITECTURA.md` actualizado: etapas, qué hace cada herramienta y cuándo se llama, temas de metodología, tokens y la traducción de la entrega (sección 10, que sustituye a `ADAPTACION_MODELOS.md`).
+- [x] `app.py` probado con las herramientas nuevas (`AppTest`, 2026-11-02): arranca sin errores y el waterfall llega al panel. No necesita más cambios.
+- [x] Despliegue en Streamlit Cloud (pasos en `README_ARQUITECTURA.md`, sección 8).
 
-## Notas sobre el repositorio
+## Qué quitar al terminar
 
-- [x] `data/processed/README.md` dice que el agente usa `dataset_pisa_estrato_llm.pkl`. Ya no es así: ahora lee `tabla_modelo_alumno.parquet` mediante `preparar_artefactos.py`. Ese `.pkl` puede pasar a `anexo/modelo_por_estrato/datos/`.
+- [x] `ENTREGA_MODELOS.md` (borrado; las referencias del código apuntan ahora a `models/README.md`).
+- `ADAPTACION_MODELOS.md`: su contenido ya está en `metodologia/modelos.md` y en la sección 10 de `README_ARQUITECTURA.md`. Se puede borrar.
+- `REQUISITOS_PENDIENTES.md` (este fichero).
+- En `preparar_artefactos.py`: los gráficos comentados que no se usen, los `#Check` y los textos «pendiente del modelado» / «Etapa 2».
+- Las menciones a «etapa 2» y «se añadirá» en `herramientas.py`, `datos.py`, `config.py`, `graficos.py` y `system_prompt.md`.
+- Opcional: `agente_pisa.ipynb` (banco de pruebas con Gradio), si ya no se usa.
+- No tocar: `models/` (es la entrega del compañero) ni `artefactos/` (los usa la app en la nube).

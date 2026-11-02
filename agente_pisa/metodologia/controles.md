@@ -50,6 +50,10 @@ esas diferencias se atribuiría por error a las variables de interés. Hay ocho 
   más huecos en Reino Unido, Islandia y Australia).
 - Las variables de interés no se rellenan: los alumnos sin compromiso o sin recursos de estudio no entran en el
   modelo.
+- El indicador de «sin dato» no debe leerse como el efecto de no tener ese recurso. Dejar preguntas en blanco
+  probablemente refleja también otras cosas: el cuestionario se responde después del examen, y quien lee peor, va
+  más lento o se esfuerza menos deja más preguntas sin contestar. Encaja con que la diferencia de nota de estos
+  alumnos sea mayor en lectura que en matemáticas, pero no se ha comprobado por separado.
 
 ## Cómo leer la dotación del centro
 - Una vez tenidos en cuenta los alumnos y el tipo de centro, la dotación apenas se asocia con la nota (entre −1,6 y
