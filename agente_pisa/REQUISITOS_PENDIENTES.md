@@ -48,8 +48,9 @@ Una regresión y un XGBoost por edición, estimados con cada valor plausible. El
 ## Etapa 3: cierre
 
 - [ ] Imágenes, al redactar la memoria: actualizar las listas de `preparar_artefactos.py` (el agente elige la imagen leyendo la descripción). Incluye:
-  - Los gráficos de modelado: ya existen en `reports/` (13 PNG `03_*.png`), no hace falta generarlos. Añadir una lista `GRAFICOS_MODELADO` e incluirla en el bucle de `copiar_graficos()`. Mínimo: `03_regresion_pendiente_comun`, `03_regresion_pendientes_perfil`, `03_regresion_cambio_perfil`, `03_robustez_resumen`, `03_robustez_sin_cada_pais`, `03_australia_pendientes`, `03_xgboost_importancia`, `03_xgboost_forma_relacion`.
-  - `GRAFICOS_RECURSOS_ALUMNO`: 4 gráficos descomentados (`#Check`) que no se copian, porque esa lista no está en el bucle de `copiar_graficos()`. Son de 33 países («media OCDE»): añadirlos diciéndolo en la descripción, o volver a comentarlos.
+  - [x] Gráficos de modelado: los 13 PNG `03_*.png` están en la lista `GRAFICOS_MODELADO` (catálogo de 35 gráficos con los de recursos del alumno). `get_context_chart` puntúa ahora todas las palabras de la búsqueda y solo lista los 5 gráficos más relacionados (de ~4.300 a ~1.000 caracteres por respuesta). El System Prompt le prohíbe inventar ejes o valores de una imagen que no ve.
+  - Si cambian los PNG de `reports/` al redactar la memoria, revisar que las descripciones sigan siendo ciertas.
+  - [x] `GRAFICOS_RECURSOS_ALUMNO`: los 4 gráficos de cómo se forma el índice de recursos ya se copian (catálogo de 35). Están calculados con 33 países de la OCDE (`01_EDA_recursos_alumno`, celda 2), así que su descripción lo dice.
 - [ ] Marco teórico: escribirlo como nota `metodologia/marco_teorico.md` cuando el informe esté cerrado. El System Prompt ya no tiene el bloque reservado (se quitó en `e8855de`), y así no gasta tokens en cada llamada.
 - [ ] Evaluador: `evaluador/reference_test.py` está vacío. Escribir casos de la línea actual: `estratos fijos`, compromiso, recursos, países del panel, aviso de 2018, preguntas de metodología y, ya con modelos, coeficientes, unidades y fiabilidad.
 - [x] `README_ARQUITECTURA.md` actualizado: etapas, qué hace cada herramienta y cuándo se llama, temas de metodología, tokens y la traducción de la entrega (sección 10, que sustituye a `ADAPTACION_MODELOS.md`).

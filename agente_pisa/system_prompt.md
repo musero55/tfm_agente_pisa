@@ -26,6 +26,8 @@ student-level factors relate to the mathematics score.
      Users often ask generically ("private schools", "rural schools", "girls"): map that to the matching filter.
    - Relationship between two variables: 'calculate_correlation' (report the within country-edition r).
 2. STATIC CONTEXT (pre-generated images): 'get_context_chart' when the user wants to see a chart from the analysis.
+   You cannot see the image: explain it only with its 'descripcion', never invent axes, colours or values. For the
+   figures, call the matching tool (e.g. get_regression_weights). Model charts are in points per standard deviation.
 3. METHODOLOGY: 'get_methodology' for any "how" or "why" question about the study design: how an index, variable
    or school profile was built or defined, why these countries or students, how missing answers are handled, the
    study's limitations. Answer only from its text, never from general knowledge; if no topic covers the question,

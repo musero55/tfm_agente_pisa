@@ -194,7 +194,7 @@ def vista_galeria() -> None:
     fila = catalogo[catalogo["descripcion"] == descripcion].iloc[0]
     st.image(str(resolver_imagen(fila["ruta"])), width="stretch")
     st.markdown(f"**{fila['descripcion']}**")
-    st.caption("Selección de ejemplo de los gráficos del análisis exploratorio.")
+    st.caption("Gráficos del análisis exploratorio y del modelado. Los de la regresión están en puntos por desviación típica.")
 
 
 def grafico_estadistica(datos: dict):
@@ -251,9 +251,11 @@ def vista_respuesta_agente() -> None:
 #  CHAT (IZQUIERDA)
 # ==========================================================
 def limpiar_texto(texto: str) -> str:
-    """Quita imágenes Markdown/HTML que el modelo pudiera escribir pese a las instrucciones."""
+    """Quita imágenes Markdown/HTML y rutas de imagen que el modelo pudiera escribir pese a las instrucciones."""
     texto = re.sub(r"!\[.*?\]\([^)]*\)", "", texto)
-    return re.sub(r"<img\s+[^>]*>", "", texto).strip()
+    texto = re.sub(r"<img\s+[^>]*>", "", texto)
+    texto = re.sub(r"\s*(?:como\s+)?[\"“«`']?(?:img|tmp)/[\w.-]+\.png[\"”»`']?", "", texto)   # «img/03_x.png»
+    return texto.strip()
 
 
 def imagenes_del_turno(mensajes: list) -> list[str]:

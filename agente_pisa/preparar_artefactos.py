@@ -153,15 +153,70 @@ GRAFICOS_VARIABLES_MODELO = [
     #  "Porcentaje de alumnos sin dato y su diferencia de nota, por perfil de centro y edición"),
 ]
 
-# 33 países: descomentar solo si el agente pasa a cubrir también los países fuera del panel
+# Modelado (notebooks/fase_3_modelado). Los gráficos de la regresión están en puntos por desviación típica; las
+# herramientas del agente, en unidades originales (metodologia/modelos.md, «Unidades»)
+GRAFICOS_MODELADO = [
+    # 03_regresion_por_edicion: el modelo principal
+    ("regresion_coeficiente_comun", "03_regresion_pendiente_comun.png",
+     "Regresión: coeficiente común de compromiso y recursos de estudio en cada edición 2012-2022, con intervalo del "
+     "95 % (puntos por desviación típica, comparando alumnos del mismo país y origen social)"),
+    ("regresion_coeficientes_perfil", "03_regresion_pendientes_perfil.png",
+     "Regresión: coeficiente de compromiso y de recursos de estudio en cada perfil de centro y edición, con intervalo "
+     "del 95 % (puntos por desviación típica); los puntos huecos son perfiles con menos de 30 centros"),
+    ("regresion_cambio_perfil", "03_regresion_cambio_perfil.png",
+     "Regresión: cambio de 2012 a 2022 del coeficiente de compromiso y de recursos en cada perfil de centro, con "
+     "intervalo del 95 % (puntos por desviación típica); destaca la subida de los recursos en el privado urbano grande, "
+     "que depende de Australia"),
+    # 03_robustez_regresion: qué resultados aguantan
+    ("robustez_resumen", "03_robustez_resumen.png",
+     "Robustez: cambio de 2012 a 2022 del coeficiente del compromiso, de los recursos y de los recursos en el privado "
+     "urbano grande en cada comprobación (otros controles, panel de 25 países, sin Australia, España, Reino Unido o Corea)"),
+    ("robustez_sin_cada_pais", "03_robustez_sin_cada_pais.png",
+     "Robustez: p-valor de los contrastes «los perfiles de centro son iguales» al quitar cada país, en el panel común y "
+     "en el ampliado; solo sin Australia los recursos dejan de diferir entre perfiles en el panel común"),
+    ("robustez_asistencia_panel_ampliado", "03_robustez_asistencia_panel_ampliado.png",
+     "Robustez: coeficiente común del absentismo, la impuntualidad y los recursos de estudio por edición, en el panel "
+     "común de 12 países y en el ampliado de 25"),
+    ("robustez_techo_recursos", "03_robustez_techo_recursos.png",
+     "Robustez: porcentaje de alumnos con los seis recursos de estudio (efecto techo) por perfil de centro y edición"),
+    # 03_australia_privados_grandes: el privado urbano grande depende de Australia
+    ("australia_coeficiente_recursos", "03_australia_pendientes.png",
+     "Australia: coeficiente de los recursos de estudio en sus privados urbanos grandes, en toda Australia y en los "
+     "otros 11 países, por edición (puntos por desviación típica). El salto de 2022 del privado urbano grande viene de "
+     "Australia: no es un rasgo general de estos centros (nota de perfiles de centro)"),
+    ("australia_nota_por_tramo", "03_australia_nota_por_tramo.png",
+     "Australia: nota media de matemáticas según los recursos de estudio (los seis, falta uno, faltan dos o más) en sus "
+     "privados urbanos grandes y en el resto del país, por edición (medias sin controles)"),
+    # 03_errores_brr: validación de los errores típicos
+    ("errores_brr_comparacion", "03_errores_brr_comparacion.png",
+     "Errores típicos de los coeficientes por perfil: agrupados por centro frente a pesos replicados de PISA (BRR); "
+     "casi coinciden"),
+    # 03_xgboost_shap: comprobación con XGBoost y SHAP
+    ("xgboost_importancia", "03_xgboost_importancia.png",
+     "XGBoost: importancia de cada variable en la predicción (media del valor absoluto del SHAP, en puntos) por edición"),
+    ("xgboost_forma_relacion", "03_xgboost_forma_relacion.png",
+     "XGBoost: forma de la relación del compromiso y de los recursos de estudio con la nota (SHAP medio por valor) "
+     "frente a la recta de la regresión; muestra el efecto techo de los recursos"),
+    ("xgboost_coeficientes_perfil", "03_xgboost_pendientes_perfil.png",
+     "XGBoost frente a regresión: coeficiente de compromiso y de recursos en cada perfil y edición (puntos por unidad); "
+     "XGBoost no reproduce el salto del privado urbano grande"),
+]
+
+# 01_EDA_recursos_alumno: cómo se forma el índice de recursos de estudio. Están calculados con los 33 países de la
+# OCDE de los datos, no con el panel de 12: la descripción lo dice para que el agente no los presente como del panel.
+# Los comentados son de comparación entre países o de validación y no se usan.
 GRAFICOS_RECURSOS_ALUMNO = [
     #Check
     ("recursos_alumno_saturacion", "01_recursos_alumno_saturacion.png",
-     "Porcentaje de alumnos que tiene cada varaiable que compone el indice de recursos, por edición (media OCDE)"),
+     "Recursos de estudio: porcentaje de alumnos que tiene cada objeto de estudio en casa, por edición, incluidos los "
+     "que se dejan fuera del índice (escritorio y sitio tranquilo, sin dato en 2022; software educativo). Casi todos "
+     "tienen la mayoría. 33 países de la OCDE, cada país pesa igual"),
 
     #Check
     ("recursos_alumno_subindice_estudio", "01_recursos_alumno_subindice_estudio.png",
-     "Cuántos recursos de estudio en casa (de 0 a 6) tiene cada alumno"),
+     "Índice de recursos de estudio: porcentaje de alumnos con 0 a 6 de los seis recursos (habitación, ordenador, "
+     "internet, libros de ayuda, libros técnicos y diccionario), por edición; la mayoría tiene 5 o 6. 33 países de la "
+     "OCDE, cada país pesa igual"),
     # ("recursos_alumno_validacion", "01_recursos_alumno_validacion.png",
     #  "Correlación de cada subíndice de recursos del hogar con los índices oficiales de la OCDE"),
     # ("recursos_alumno_sin_subindice", "01_recursos_alumno_sin_subindice.png",
@@ -171,14 +226,18 @@ GRAFICOS_RECURSOS_ALUMNO = [
 
     #Check
     ("recursos_alumno_reparto_varianza", "01_recursos_alumno_reparto_varianza.png",
-     "En qué nivel varían los subíndices de recursos del hogar, las notas y el ESCS: entre países, ediciones, centros y alumnos"),
+     "Reparto de la varianza de los recursos de estudio, la riqueza del hogar, los libros, las notas y el nivel "
+     "socioeconómico: entre países, ediciones, centros y alumnos; los recursos varían sobre todo entre alumnos del "
+     "mismo centro (75 %). 33 países de la OCDE, 2012-2022"),
 
     # ("recursos_alumno_correlaciones_nota", "01_recursos_alumno_correlaciones_nota.png",
     #  "Correlaciones dentro de cada país entre recursos del hogar, origen social y notas, por edición"),
 
     #Check
     ("recursos_alumno_nota", "01_recursos_alumno_asociacion_nota.png",
-     "Asociación de cada subíndice (recursos de estudio, riqueza, libros) con la nota, dentro de cada país y edición.Con y sin las variables de control"),
+     "Asociación de los recursos de estudio, la riqueza del hogar y los libros con la nota dentro de cada país y "
+     "edición, solos y con el origen social (puntos por desviación típica). Incluye lectura y ciencias, pero el "
+     "estudio usa solo matemáticas. 33 países de la OCDE"),
 
     # ("recursos_alumno_indices_centro", "01_recursos_alumno_indices_centro.png",
     #  "Porcentaje de alumnos con dato en apoyo del profesor (TEACHSUP) y TIC del centro (ICTSCH), por país y edición"),
@@ -230,7 +289,8 @@ def preparar_alumnos() -> pd.DataFrame:
 
 def copiar_graficos() -> pd.DataFrame:
     filas = []
-    for id_grafico, fichero, descripcion in (GRAFICOS_ESTRATOS + GRAFICOS_COMPROMISO + GRAFICOS_RECURSOS_CENTRO + GRAFICOS_VARIABLES_MODELO):
+    for id_grafico, fichero, descripcion in (GRAFICOS_ESTRATOS + GRAFICOS_COMPROMISO + GRAFICOS_RECURSOS_ALUMNO + GRAFICOS_RECURSOS_CENTRO
+                                           + GRAFICOS_VARIABLES_MODELO + GRAFICOS_MODELADO):
         origen = FUENTES["reports"] / fichero
         if not origen.exists():
             print(f"Aviso: no existe reports/{fichero}; se omite del catálogo.")

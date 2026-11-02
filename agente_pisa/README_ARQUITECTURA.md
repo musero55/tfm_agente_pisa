@@ -33,8 +33,8 @@ agente_pisa/
 │   ├── coeficientes_regresion.csv   Regresión por edición, traducida al formato del agente (sección 10)
 │   ├── shap_alumnos.parquet         SHAP del XGBoost de cada alumno, medio entre valores plausibles
 │   ├── metricas_modelos.csv         R², RMSE y MAE de la regresión y del XGBoost por edición
-│   ├── catalogo_graficos.csv        Imágenes que el agente y la galería pueden mostrar
-│   └── img/                         PNG copiados de reports/
+│   ├── catalogo_graficos.csv        Los 35 gráficos que el agente y la galería pueden mostrar, con su descripción
+│   └── img/                         PNG copiados de reports/ (análisis exploratorio y modelado)
 ├── README_ARQUITECTURA.md    Este documento
 └── REQUISITOS_PENDIENTES.md  Checklist de lo que falta
 ```
@@ -104,7 +104,7 @@ El agente elige las herramientas leyendo su descripción (el *docstring*) y el e
 |---|---|---|---|
 | a) Estadísticas descriptivas | `get_math_stats` | Media ponderada de la nota (o de otra variable del alumno) en cualquier subgrupo: país, edición, `estratos fijos`, nivel de compromiso, nivel de recursos, sexo u origen. Con `group_by` compara grupos o hace el ranking de países. La app dibuja su resultado | «¿Qué nota sacan los centros rurales?», «ranking de países en 2022», «¿cómo ha evolucionado la nota?» |
 | | `calculate_correlation` | Correlación ponderada entre dos variables del alumno: la media de las correlaciones dentro de cada país y edición (como en el EDA) y la global | «¿Se relacionan los recursos con la nota?» |
-| b) Contexto | `get_context_chart` | Devuelve un PNG del catálogo según una palabra clave, con la lista de los demás | Cuando el usuario quiere ver un gráfico del análisis |
+| b) Contexto | `get_context_chart` | Devuelve el PNG del catálogo que mejor encaja con las palabras clave (descriptivos, regresión, robustez, Australia, XGBoost…) y los 5 más relacionados. El agente no ve la imagen: la explica con su descripción | Cuando el usuario quiere ver un gráfico del análisis |
 | | `get_methodology` | Devuelve una nota de `metodologia/` | Preguntas de «cómo» o «por qué» sobre el diseño del estudio, y «¿es fiable este resultado?» |
 | c) Modelos | `get_regression_weights` | Resultados de la regresión por edición (ver abajo) | Peso de una variable, qué pesa más, diferencias entre perfiles con lo demás igual, simulaciones y cambios de 2012 a 2022 |
 | | `get_xgboost_patterns` | Patrones del XGBoost a partir de los SHAP de cada alumno (ver abajo) | Qué mueve más la predicción, por qué un grupo saca más o menos y la forma de una relación |

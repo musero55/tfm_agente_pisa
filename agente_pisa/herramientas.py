@@ -311,24 +311,34 @@ def calculate_correlation(variable_a: str, variable_b: str = "nota", year: Union
 # b) CONTEXTO ESTÁTICO (imágenes pre-generadas)
 # ==============================================================================
 
+def _puntuar_grafico(palabras: list[str], id_grafico: str, descripcion: str) -> float:
+    """Parecido medio de las palabras buscadas con el texto del gráfico, con un extra si están en su identificador."""
+    texto = _sin_acentos(f"{id_grafico} {descripcion}").replace(",", " ").replace("(", " ").replace(")", " ").split()
+    id_palabras = _sin_acentos(id_grafico).split()
+    parecido = np.mean([max(difflib.SequenceMatcher(None, p, t).ratio() for t in texto) for p in palabras])
+    en_id = np.mean([max(difflib.SequenceMatcher(None, p, t).ratio() for t in id_palabras) >= 0.8 for p in palabras])
+    return float(parecido + 0.2 * en_id)
+
+
 @tool
 def get_context_chart(keyword: str = "") -> str:
     """
     Returns a pre-generated chart from the project's analysis (no computation). Use keyword to choose
-    (e.g. 'recursos', 'centro', 'cobertura'). The answer lists the other available charts.
+    (e.g. 'recursos', 'regresion perfiles', 'robustez', 'Australia', 'xgboost importancia', 'efecto techo').
+    The answer lists the five next most related charts.
     """
     try:
         catalogo = cargar_catalogo_graficos()
         if catalogo.empty:
             return _error("No hay gráficos de contexto disponibles todavía.")
+        # Palabras con contenido (fuera artículos y preposiciones cortas); sin ellas, el primer gráfico
+        palabras = [p for p in _sin_acentos(keyword).split() if len(p) > 3]
+        if palabras:
+            puntuacion = catalogo.apply(lambda f: _puntuar_grafico(palabras, f["id"], f["descripcion"]), axis=1)
+            catalogo = catalogo.loc[puntuacion.sort_values(ascending=False, kind="stable").index]
         elegido = catalogo.iloc[0]
-        if keyword:
-            texto = (catalogo["id"] + " " + catalogo["descripcion"]).map(_sin_acentos)
-            clave = _sin_acentos(keyword)
-            puntuacion = texto.map(lambda t: max(difflib.SequenceMatcher(None, clave, p).ratio() for p in t.split()))
-            elegido = catalogo.loc[puntuacion.idxmax()]
         return _json({"imagen": elegido["ruta"], "descripcion": elegido["descripcion"],
-                      "otros": [d for d in catalogo["descripcion"] if d != elegido["descripcion"]]})
+                      "otros_relacionados": list(catalogo["descripcion"].iloc[1:6])})
     except Exception as e:
         return _error(f"Gráfico de contexto: {e}")
 
