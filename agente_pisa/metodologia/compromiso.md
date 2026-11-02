@@ -77,6 +77,22 @@ más alto indica más compromiso.
 - Los deberes apenas se relacionan con la asistencia. El índice no mide una sola cualidad que se refleje en las tres
   conductas: es la media de tres conductas distintas, con el mismo peso. Al explicarlo, conviene decir qué
   componente hay detrás de cada resultado.
+- En cifras: faltar a clase y llegar tarde tienen una correlación de unos 0,3; los deberes, prácticamente 0 con las
+  otras dos, en las cuatro ediciones.
+
+## Por qué se mantiene el índice aunque sus conductas no pesen igual
+- Es una definición del compromiso decidida antes de mirar la nota, no un instrumento para predecirla. Que las
+  conductas se asocien de forma distinta con la nota es un resultado del estudio, no un fallo del índice.
+- Pesos iguales porque las alternativas eran peores: dar a cada conducta el peso que tiene en la nota haría el
+  análisis circular (el índice se construiría con la variable que se quiere explicar) y cambiaría los pesos en
+  cada edición, de modo que el índice de 2012 y el de 2022 no medirían lo mismo; y los componentes principales lo
+  convertían en un índice solo de asistencia.
+- El índice responde a la pregunta general (¿se asocia el compromiso con la nota y cambia en la década?); las
+  conductas por separado explican qué hay detrás. La conclusión aguanta en los dos niveles: el compromiso se asocia
+  a más nota en todas las ediciones, sobre todo por la asistencia.
+- Contrapartidas: el orden del índice no es el de la nota (no faltar con deberes fuera del tiempo intermedio se
+  asocia a más nota que hacer bien los deberes y faltar), y su coeficiente es un promedio de las tres conductas.
+  Para una conducta concreta hay que usar sus cifras por separado (ver la cautela siguiente).
 
 ## Cautela: la subida de su relación con la nota viene de los deberes
 - El coeficiente del índice sube algo de 2012 a 2022: de 10,6 a 12,1 puntos de matemáticas por desviación típica

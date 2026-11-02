@@ -33,6 +33,7 @@ agente_pisa/
 │   ├── coeficientes_regresion.csv   Regresión por edición, traducida al formato del agente (sección 9)
 │   ├── shap_alumnos.parquet         SHAP del XGBoost de cada alumno, medio entre valores plausibles
 │   ├── metricas_modelos.csv         R², RMSE y MAE de la regresión y del XGBoost por edición
+│   ├── conductas_compromiso.csv     Coeficiente de cada conducta del compromiso (2012 y 2022), de data/processed/resultados_robustez.parquet
 │   ├── catalogo_graficos.csv        Los 35 gráficos que el agente y la galería pueden mostrar, con su descripción
 │   └── img/                         PNG copiados de reports/ (análisis exploratorio y modelado)
 ├── README_ARQUITECTURA.md    Este documento
@@ -128,6 +129,7 @@ El agente elige las herramientas leyendo su descripción (el *docstring*) y el e
 |---|---|---|
 | Sin `variable` | El peso de todas las variables en una edición, ordenadas por puntos por desviación típica (la única forma justa de compararlas) | «¿Qué pesa más en la nota?» |
 | `variable='recursos'` | Coeficiente común con su unidad (por cada uno más de los seis recursos, que se nombran), intervalo, p y cuántos recursos tiene el alumnado (media y % con los seis) | «¿Cuánto se asocian los recursos con la nota?» |
+| `variable='compromiso'` (o `'faltar'`, `'llegar tarde'`, `'deberes'`) | Además del coeficiente del índice, el de cada conducta por separado (2012 y 2022, de las comprobaciones de robustez) y qué parte del alumnado la tiene. El índice da el mismo peso a las tres, pero no pesan igual | «¿Y si deja de faltar a clase?», «¿importan los deberes?» |
 | Con filtros de perfil | El coeficiente dentro de esos perfiles, y detrás el común para comparar. Solo compromiso y recursos tienen uno por perfil | «¿Y en los privados urbanos grandes?» |
 | `variable='perfil'` | Diferencia de nota de cada perfil frente al público urbano mediano, con alumnos iguales en todo lo demás | «Con alumnos parecidos, ¿se saca más en los privados?» |
 | `cambio`, `desde` | Simulación lineal (coeficiente × cambio) con su intervalo y el aviso del efecto techo. Con `desde`, comprueba que el resultado cabe en la escala (los recursos van de 0 a 6) | «¿Y si un alumno con 3 recursos tuviera el doble?», «¿y si le quitamos el ordenador?» |
@@ -139,7 +141,7 @@ El agente elige las herramientas leyendo su descripción (el *docstring*) y el e
 |---|---|---|
 | `importancia` | Puntos que mueve cada variable de media (media del valor absoluto del SHAP), en un grupo, entre grupos o entre ediciones. Indica qué variables difieren más de 2 puntos entre grupos | «¿Qué pesa más en los centros rurales frente a los urbanos?» |
 | `contribucion` | Por qué la predicción de un grupo está por encima o por debajo de la media de la edición: el SHAP medio de cada variable y el valor típico del grupo. Dibuja un waterfall | «¿Por qué los alumnos de privados sacan más?» |
-| `forma` | SHAP medio para cada valor de una variable (las continuas, por quintiles) | «¿Se aplana la relación de los recursos con la nota?» |
+| `forma` | SHAP medio para cada valor de una variable (las continuas, por quintiles). En el compromiso, cada valor del índice aparece como su combinación de conductas | «¿Se aplana la relación de los recursos con la nota?» |
 
 Los niveles descriptivos usan cortes fijos, iguales en todas las ediciones:
 - **Compromiso:** bajo por debajo de −1 desviación típica, medio entre −1 y +1, alto por encima de +1 (los umbrales del EDA del índice).

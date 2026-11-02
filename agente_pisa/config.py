@@ -25,6 +25,7 @@ DIR_METODOLOGIA = DIR_AGENTE / "metodologia"
 RUTA_SHAP = DIR_ARTEFACTOS / "shap_alumnos.parquet"                # SHAP de cada alumno, medio entre valores plausibles
 RUTA_COEFICIENTES = DIR_ARTEFACTOS / "coeficientes_regresion.csv"  # regresión por edición, combinada con Rubin
 RUTA_METRICAS = DIR_ARTEFACTOS / "metricas_modelos.csv"            # R², RMSE y MAE por modelo y edición
+RUTA_CONDUCTAS = DIR_ARTEFACTOS / "conductas_compromiso.csv"       # regresión con las tres conductas del compromiso
 
 # Imágenes generadas en vivo (waterfall, etapa 2). En Streamlit Cloud el disco es efímero, por eso van a temp.
 DIR_IMAGENES_TEMP = Path(tempfile.gettempdir()) / "pisa_plots"
@@ -37,6 +38,8 @@ FUENTES = {
     "shap_alumnos": DIR_RAIZ / "models" / "shap_alumnos.parquet",
     "coeficientes_regresion": DIR_RAIZ / "models" / "coeficientes_regresion.csv",
     "metricas_modelos": DIR_RAIZ / "models" / "metricas_modelos.csv",
+    # Comprobaciones de robustez (03_robustez_regresion): de aquí sale la regresión con las conductas por separado
+    "resultados_robustez": DIR_RAIZ / "data" / "processed" / "resultados_robustez.parquet",
 }
 
 # ==========================================================

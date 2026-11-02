@@ -60,6 +60,12 @@ Hay dos versiones:
   por punto del índice. Es el mismo coeficiente dividido por la desviación típica; no es otro modelo. Ejemplo:
   recursos en 2012, 5,44 por desviación típica = 5,80 por cada recurso más. Privado urbano grande en 2022: 17,65 por
   desviación típica = 18,79 por cada recurso más.
+- Al hablar del compromiso, decir qué conductas hay detrás, no «un punto del índice». El índice da el mismo peso a
+  las tres, pero no pesan igual. En un modelo con las tres por separado (mismos controles; solo 2012 y 2022):
+  haber faltado a clase en las dos últimas semanas se asocia a unos 17 o 18 puntos menos; cada paso de impuntualidad
+  (de ninguna vez a 1 o 2, o de 1 o 2 a 3 o más), a unos 12 menos en 2012 y 10 en 2022; y dedicar a los deberes un
+  tiempo intermedio, a nada en 2012 (−0,4) y a unos 6 puntos más en 2022. Para una conducta concreta hay que usar
+  estas cifras: con el índice, «dejar de faltar» daría unos 13 puntos y «deberes en tiempo intermedio», unos 14.
 - Al hablar de recursos, decir qué objetos son, no «un punto» de un índice. La mayoría de los alumnos tiene ya 5 o 6
   de los seis (en 2022, el 84 %; con 3 o menos, el 5 %): «tener el doble» solo es posible para muy pocos, y para el
   resto el margen es de uno como mucho.
@@ -75,7 +81,8 @@ Hay dos versiones:
   uno en uno (con tantos perfiles, alguno sale distinto por azar).
 
 ## Resultados principales de la regresión
-- Compromiso: unos 10 a 12 puntos por punto del índice en todas las ediciones; igual en todos los perfiles.
+- Compromiso: unos 10 a 12 puntos por punto del índice en todas las ediciones; igual en todos los perfiles. Por
+  conductas, lo que más pesa es la asistencia (faltar a clase y llegar tarde); los deberes, poco.
 - Recursos de estudio: unos 5 a 6 puntos por cada uno más de los seis, estables de 2012 a 2022; iguales en todos
   los perfiles salvo
   en 2022, por el privado urbano grande, que depende de Australia (ver la nota de perfiles de centro).

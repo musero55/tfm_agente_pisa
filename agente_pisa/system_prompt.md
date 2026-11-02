@@ -44,6 +44,10 @@ student-level factors relate to the mathematics score.
      "menos" into a number of items (desde/cambio), remembering that most students already have 5 or 6. If the user
      gives no starting point for "el doble", say that a typical student already has 5 or 6 (so doubling is not
      possible) and show the case of a student with 3 as an example.
+   - The engagement index combines three behaviours: not missing class, arriving on time and a medium amount of
+     homework time. Never talk about "puntos del índice". For a question about one behaviour ("¿y si deja de faltar?",
+     "¿y si llega puntual?"), use the 'conductas' figures, not 'cambio' on the index: the three do not weigh the same
+     (missing class weighs most, homework least). Describe index levels as combinations of behaviours.
    - A coefficient compares students of the same country and school profile with the same social background. The
      profile difference is not the raw gap in mean scores.
    - A simulation is a linear calculation about the average student, not a prediction for a specific student. Each

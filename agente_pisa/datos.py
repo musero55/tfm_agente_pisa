@@ -10,7 +10,9 @@ Fuera de `streamlit run` (notebook, evaluador) los decoradores siguen funcionand
 import pandas as pd
 import streamlit as st
 
-from config import DIR_ARTEFACTOS, RUTA_ALUMNOS, RUTA_CATALOGO_GRAFICOS, RUTA_COEFICIENTES, RUTA_METRICAS, RUTA_SHAP
+from config import (
+    DIR_ARTEFACTOS, RUTA_ALUMNOS, RUTA_CATALOGO_GRAFICOS, RUTA_COEFICIENTES, RUTA_CONDUCTAS, RUTA_METRICAS, RUTA_SHAP,
+)
 
 # Evita los avisos "No runtime found" cuando se importa desde el notebook o el evaluador
 if not st.runtime.exists():
@@ -51,6 +53,10 @@ def metricas_disponibles() -> bool:
     return RUTA_METRICAS.exists()
 
 
+def conductas_disponibles() -> bool:
+    return RUTA_CONDUCTAS.exists()
+
+
 @st.cache_data(show_spinner=False)   # sin spinner: las herramientas se ejecutan en hilos sin contexto de Streamlit
 def cargar_shap() -> pd.DataFrame:
     """SHAP del XGBoost de cada alumno (medio entre valores plausibles), con valor base y predicción."""
@@ -72,11 +78,18 @@ def cargar_metricas() -> pd.DataFrame:
     return pd.read_csv(RUTA_METRICAS)
 
 
+@st.cache_data(show_spinner=False)
+def cargar_conductas() -> pd.DataFrame:
+    """Coeficiente de cada conducta del compromiso (faltar, llegar tarde, deberes) en 2012 y 2022."""
+    _comprobar(RUTA_CONDUCTAS)
+    return pd.read_csv(RUTA_CONDUCTAS)
+
+
 def precargar_artefactos() -> None:
     """Llena las cachés desde el hilo principal antes de que el agente las use desde sus hilos de herramientas."""
     cargar_alumnos()
     cargar_catalogo_graficos()
     for disponible, cargar in [(regresion_disponible, cargar_coeficientes), (shap_disponible, cargar_shap),
-                               (metricas_disponibles, cargar_metricas)]:
+                               (metricas_disponibles, cargar_metricas), (conductas_disponibles, cargar_conductas)]:
         if disponible():
             cargar()

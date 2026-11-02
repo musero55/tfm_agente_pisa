@@ -32,7 +32,8 @@ from config import (
     TAMANOS, TIPOS_CENTRO, UBICACIONES, VARIABLES_NUMERICAS, etiqueta,
 )
 from datos import (
-    cargar_alumnos, cargar_catalogo_graficos, cargar_coeficientes, cargar_shap, regresion_disponible, shap_disponible,
+    cargar_alumnos, cargar_catalogo_graficos, cargar_coeficientes, cargar_conductas, cargar_shap, conductas_disponibles,
+    regresion_disponible, shap_disponible,
 )
 
 # ==========================================================
@@ -367,7 +368,9 @@ def get_methodology(topic: Literal[TEMAS_METODOLOGIA]) -> str:
 
 # Variables de la regresión y unidad de su coeficiente en unidades originales (las de alumnos_modelo)
 UNIDADES_REGRESION = {
-    "Indice_Compromiso_Competencia": "puntos por cada punto más del índice (≈ 1 desviación típica)",
+    "Indice_Compromiso_Competencia": "puntos de nota por cada punto más del índice de compromiso (≈ 1 desviación "
+                                     "típica), que combina tres conductas: no faltar a clase, llegar puntual y dedicar "
+                                     "a los deberes un tiempo intermedio. Para una conducta concreta, ver 'conductas'",
     "recursos_estudio": "puntos de nota por cada uno más de los seis recursos de estudio: habitación propia, "
                         "ordenador, internet, libros de ayuda, libros técnicos y diccionario",
     "HISEI_TREND": "puntos por cada punto más de ocupación de los padres (escala de 11 a 89)",
@@ -387,6 +390,12 @@ SINONIMOS_REGRESION = {
     "inmigrante": ["inmigrante", "inmigrantes", "inmigracion", "origen"],
     "efecto_perfil": ["perfil", "perfiles", "perfil de centro", "tipo de centro", "centro", "estrato", "estratos fijos"],
 }
+# Las conductas del compromiso llevan al compromiso, que devuelve el coeficiente de cada una
+SINONIMOS_REGRESION["Indice_Compromiso_Competencia"] = SINONIMOS_REGRESION["Indice_Compromiso_Competencia"] + [
+    "faltar", "faltar a clase", "absentismo", "asistencia", "llegar tarde", "impuntualidad", "puntualidad", "deberes",
+    "tiempo de deberes", "horas de deberes", "conductas"]
+# Etiqueta de cada combinación de conductas (para la forma del compromiso en el XGBoost)
+TEXTO_IMPUNTUALIDAD = {0: "siempre puntual", 1: "llega tarde 1 o 2 veces", 2: "llega tarde 3 o más veces"}
 VARIABLES_POR_PERFIL = ("Indice_Compromiso_Competencia", "recursos_estudio")   # las únicas con coeficiente por perfil
 PERFIL_REFERENCIA = "PUB_URB_MED"
 # Valores mínimo y máximo de cada variable en los datos: una simulación no puede salirse de ellos
@@ -405,7 +414,9 @@ AVISOS_SIMULACION = {
     "recursos_estudio": "Cuenta lineal. Casi todos los alumnos tienen ya 5 o 6 de los seis recursos (ver "
                         "'recursos_del_alumnado'): «el doble» o «muchos más» solo es posible para quien tiene pocos. "
                         "Cerca de 6 la ganancia real es menor (efecto techo)",
-    "Indice_Compromiso_Competencia": "el índice solo toma 12 valores, de -2,1 a 1,5: el cambio debe caber en ese rango",
+    "Indice_Compromiso_Competencia": "El índice da el mismo peso a las tres conductas, pero no pesan igual: para una "
+                                     "conducta concreta («deja de faltar», «llega puntual»), usar 'conductas', no esta "
+                                     "cuenta. El índice solo toma 12 valores, de -2,1 a 1,5",
 }
 
 
@@ -483,6 +494,35 @@ def _contexto_recursos(years: list[int]) -> dict:
     return contexto[years[0]] if len(years) == 1 else contexto
 
 
+def _contexto_conductas(years: list[int]) -> dict:
+    """Qué parte del alumnado tiene cada conducta del compromiso en cada edición (ponderado con SENWT)."""
+    alumnos = cargar_alumnos()
+    contexto = {}
+    for year in years:
+        g = alumnos[alumnos["year"] == year]
+        pesos = g["SENWT"]
+        pct = lambda filtro: _r(100 * pesos[filtro].sum() / pesos.sum(), 0)
+        contexto[year] = {"pct_ha_faltado": pct(g["SKIPPING"] == 1), "pct_llega_tarde_alguna_vez": pct(g["TARDYSD"] >= 1),
+                          "pct_tarde_3_o_mas": pct(g["TARDYSD"] == 2), "pct_deberes_tiempo_intermedio": pct(g["deberes_en_u"] == 1),
+                          "pct_las_tres_bien": pct((g["SKIPPING"] == 0) & (g["TARDYSD"] == 0) & (g["deberes_en_u"] == 1))}
+    return contexto[years[0]] if len(years) == 1 else contexto
+
+
+NOMBRES_CONDUCTAS = {"faltar_a_clase": "Faltar a clase", "llegar_tarde": "Llegar tarde",
+                     "deberes_tiempo_intermedio": "Deberes en tiempo intermedio"}
+NOTA_CONDUCTAS = ("Puntos de nota de cada conducta (no por desviación típica), de un modelo con las tres por separado "
+                  "y los mismos controles. Solo hay 2012 y 2022, y no se guardó el error de cada año: no dar intervalo "
+                  "ni p de cada cifra; el p es solo del cambio de 2012 a 2022")
+
+
+def _conductas() -> dict:
+    """Puntos de nota de cada conducta en 2012 y 2022 (modelo con las tres por separado) y su cambio."""
+    return {NOMBRES_CONDUCTAS[f.conducta]: {"que_compara": f.descripcion, "puntos_2012": _r(f.coef_2012),
+                                            "puntos_2022": _r(f.coef_2022),
+                                            "cambio_2012_2022": {"dif": _r(f.cambio), "p": _p(f.p_cambio)}}
+            for f in cargar_conductas().itertuples()}
+
+
 @tool
 def get_regression_weights(variable: Optional[str] = None, year: Union[int, str] = 2022,
                            tipo_centro: Optional[str] = None, ubicacion: Optional[str] = None,
@@ -494,7 +534,9 @@ def get_regression_weights(variable: Optional[str] = None, year: Union[int, str]
     - No variable: weight of every variable in one edition, ranked by 'por_desv_tipica' (points per standard
       deviation, the fair way to compare variables; 'coef' is in each variable's own unit).
     - variable: 'compromiso', 'recursos', 'ocupacion', 'estudios padres', 'riqueza', 'libros', 'composicion social',
-      'dotacion', 'sexo' or 'inmigrante'. Add tipo_centro/ubicacion/tamano ('estratos fijos') to get the coefficient
+      'dotacion', 'sexo' or 'inmigrante'. 'compromiso' (also 'faltar', 'llegar tarde', 'deberes') adds 'conductas': the
+      score points of each of its three behaviours, from a model with them separately (2012 and 2022). Use it for
+      any question about one behaviour. Add tipo_centro/ubicacion/tamano ('estratos fijos') to get the coefficient
       inside those school profiles (only 'compromiso' and 'recursos' have one per profile).
     - variable='perfil': score difference of each school profile versus public urban medium schools, with everything
       else equal. Not the raw difference in mean scores. Use only the filters the user mentions: for "private vs
@@ -562,6 +604,10 @@ def get_regression_weights(variable: Optional[str] = None, year: Union[int, str]
                     avisos.append(AVISOS_SIMULACION[columna])
             if columna == "recursos_estudio":
                 salida["recursos_del_alumnado"] = _contexto_recursos(years)
+            elif columna == "Indice_Compromiso_Competencia" and conductas_disponibles():
+                salida["conductas"] = _conductas()
+                salida["nota_conductas"] = NOTA_CONDUCTAS
+                salida["conductas_del_alumnado"] = _contexto_conductas(years)
             filas_comun = comun[(comun["variable"] == columna) & (comun["estrato"] == "todos")]
             if perfiles is not None and columna in VARIABLES_POR_PERFIL:
                 # Lo pedido (el perfil) va primero; el común queda detrás, solo para comparar
@@ -719,6 +765,12 @@ def get_xgboost_patterns(
                 tramos = pd.qcut(valores, 5, duplicates="drop")
                 orden = tramos.cat.codes.astype(float)
                 etiquetas = tramos.map(lambda t: f"de {_r(t.left)} a {_r(t.right)}", na_action="ignore").astype(object)
+            elif nombre == "Indice_Compromiso_Competencia":                         # cada valor = unas conductas
+                orden = valores.astype(float).round(2)
+                etiquetas = (df["SKIPPING"].map({0: "no falta", 1: "falta a clase"}) + ", "
+                             + df["TARDYSD"].map(TEXTO_IMPUNTUALIDAD) + ", "
+                             + df["deberes_en_u"].map({1: "deberes en tiempo intermedio",
+                                                       0: "deberes con poco o mucho tiempo"})).astype(object)
             elif pd.api.types.is_numeric_dtype(valores):                            # pocos valores: uno a uno
                 orden = valores.astype(float).round(2)
                 etiquetas = orden.map(lambda v: str(int(v)) if v.is_integer() else str(v)).astype(object)
@@ -738,8 +790,8 @@ def get_xgboost_patterns(
             salida["puntos_por_valor"] = forma
             salida["nota"] = "SHAP medio de los alumnos con cada valor: puntos que suma o resta tenerlo"
             if nombre == "Indice_Compromiso_Competencia":
-                avisos.append("El índice solo toma 12 valores y combina tres conductas: dos valores cercanos pueden ser "
-                              "combinaciones distintas (faltar a clase pesa más que los deberes)")
+                avisos.append("Cada fila es una combinación de las tres conductas, ordenadas de menor a mayor índice: "
+                              "faltar a clase pesa más que los deberes, así que el orden del índice no es el de la nota")
 
         if avisos:
             salida["avisos"] = avisos

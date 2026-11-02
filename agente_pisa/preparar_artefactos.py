@@ -24,7 +24,7 @@ import pandas as pd
 
 from config import (
     CORTES_COMPROMISO, CORTES_RECURSOS, DIR_ARTEFACTOS, DIR_IMAGENES_MACRO, FUENTES, PAISES_PANEL,
-    RUTA_ALUMNOS, RUTA_CATALOGO_GRAFICOS, RUTA_COEFICIENTES, RUTA_METRICAS, RUTA_SHAP, TAMANOS, TIPOS_CENTRO, UBICACIONES, VARIABLES_NUMERICAS,
+    RUTA_ALUMNOS, RUTA_CATALOGO_GRAFICOS, RUTA_COEFICIENTES, RUTA_CONDUCTAS, RUTA_METRICAS, RUTA_SHAP, TAMANOS, TIPOS_CENTRO, UBICACIONES, VARIABLES_NUMERICAS,
 )
 
 # Gráficos de reports/ que se ofrecen como contexto.
@@ -248,7 +248,8 @@ GRAFICOS_RECURSOS_ALUMNO = [
 ]
 
 COLUMNAS = ["CNT", "CNTSCHID", "CNTSTUID", "year", "perfil", "SENWT", "W_FSTUWT", "sexo_femenino", "inmigrante",
-            "tiempo_deberes_totales_diarios", "perfil_poco_representativo"] + \
+            "tiempo_deberes_totales_diarios", "perfil_poco_representativo",
+            "SKIPPING", "TARDYSD", "deberes_en_u"] + \
            [c for c in VARIABLES_NUMERICAS if c != "nota"]
 
 
@@ -375,6 +376,33 @@ def preparar_coeficientes() -> pd.DataFrame | None:
     return tabla
 
 
+# Las tres conductas del índice de compromiso, cada una con su coeficiente (03_robustez_regresion, especificación
+# «componentes del índice»: el modelo de coeficiente común con las conductas en lugar del índice). Solo 2012 y 2022.
+# El índice les da el mismo peso, pero no pesan igual: para una conducta concreta, el agente usa esta tabla
+CONDUCTAS = {
+    "SKIPPING": ("faltar_a_clase", "Haber faltado a clase (un día o clases sueltas) en las dos últimas semanas, "
+                                   "frente a no haber faltado"),
+    "TARDYSD": ("llegar_tarde", "Cada paso más de impuntualidad en dos semanas: de ninguna vez a 1 o 2 veces, o de 1 "
+                                "o 2 veces a 3 o más"),
+    "deberes_en_u": ("deberes_tiempo_intermedio", "Dedicar a los deberes un tiempo intermedio (el tercio central de "
+                                                  "su edición), frente a poco o mucho tiempo"),
+}
+
+
+def preparar_conductas() -> pd.DataFrame | None:
+    """Coeficiente de cada conducta del compromiso en 2012 y 2022, y su cambio, de las comprobaciones de robustez."""
+    ruta = FUENTES["resultados_robustez"]
+    if not ruta.exists():
+        print(f"Aviso: no existe {ruta.name}; se omite la tabla de conductas.")
+        return None
+    robustez = pd.read_parquet(ruta)
+    filas = robustez[(robustez["especificacion"] == "componentes del índice") & robustez["variable"].isin(CONDUCTAS)]
+    assert len(filas) == len(CONDUCTAS), f"{ruta.name}: faltan conductas en la especificación «componentes del índice»"
+    return pd.DataFrame([{"conducta": CONDUCTAS[f.variable][0], "descripcion": CONDUCTAS[f.variable][1],
+                          "coef_2012": f.pendiente_2012, "coef_2022": f.pendiente_2022,
+                          "cambio": f.cambio, "p_cambio": f.p_cambio} for f in filas.itertuples()])
+
+
 def preparar_metricas() -> pd.DataFrame | None:
     """Métricas por modelo y edición; la regresión evaluada es la de pendiente por perfil."""
     metricas = _leer_resultado("metricas_modelos", COLUMNAS_METRICAS)
@@ -406,7 +434,8 @@ def main():
     if shap is not None:
         shap.to_parquet(RUTA_SHAP, index=False)
         print(f"{RUTA_SHAP.name}: {len(shap)} alumnos, {RUTA_SHAP.stat().st_size / 1e6:.1f} MB")
-    for tabla, destino in [(preparar_coeficientes(), RUTA_COEFICIENTES), (preparar_metricas(), RUTA_METRICAS)]:
+    for tabla, destino in [(preparar_coeficientes(), RUTA_COEFICIENTES), (preparar_metricas(), RUTA_METRICAS),
+                           (preparar_conductas(), RUTA_CONDUCTAS)]:
         if tabla is not None:
             tabla.to_csv(destino, index=False)
             print(f"{destino.name}: {len(tabla)} filas")

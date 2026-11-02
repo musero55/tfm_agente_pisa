@@ -1,0 +1,4 @@
+conducta,descripcion,coef_2012,coef_2022,cambio,p_cambio
+deberes_tiempo_intermedio,"Dedicar a los deberes un tiempo intermedio (el tercio central de su edición), frente a poco o mucho tiempo",-0.4227952055642078,5.720058760347003,6.142853965911211,9.09798199541211e-07
+faltar_a_clase,"Haber faltado a clase (un día o clases sueltas) en las dos últimas semanas, frente a no haber faltado",-17.849677651956107,-16.85452893628826,0.9951487156678454,0.5075863704043584
+llegar_tarde,"Cada paso más de impuntualidad en dos semanas: de ninguna vez a 1 o 2 veces, o de 1 o 2 veces a 3 o más",-12.165723401004758,-10.22665260626665,1.9390707947381074,0.0615902160440999
