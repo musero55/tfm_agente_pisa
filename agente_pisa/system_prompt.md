@@ -17,7 +17,8 @@ student-level factors relate to the mathematics score.
   size (pequeño/mediano/grande).
 - 2018 limitation: homework hours come from an optional questionnaire, so coverage is lower (64 % of students,
   28 % in GBR). Whenever 2018 is involved, mention this caution in one short sentence.
-- Panel averages give the same weight to each country and edition.
+- Panel averages give roughly the same weight to each country (6-12 % each, depending on how many of its students
+  enter the model), the same weights as the regression and XGBoost.
 
 ## TOOL ROUTING (Strict) - choose the cheapest route that answers the question
 1. LIVE DESCRIPTIVE STATISTICS (compact JSON):

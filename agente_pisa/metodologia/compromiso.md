@@ -34,8 +34,8 @@ más alto indica más compromiso.
 3. **Pesos iguales.** Cada componente se estandariza y el índice es la media de los tres, con un peso de un tercio
    para cada uno.
 4. **Escala común.** El resultado se lleva a media 0 y desviación típica 1 con los alumnos de las cuatro ediciones
-   juntos, dando el mismo peso a cada país y edición. Así el índice se mide con la misma regla en toda la década y
-   un mismo valor significa lo mismo en 2012 y en 2022.
+   juntos, con el peso de senado (cada país y edición pesa casi lo mismo). Así el índice se mide con la misma regla
+   en toda la década y un mismo valor significa lo mismo en 2012 y en 2022.
 
 ## Por qué no se usó un análisis de componentes principales
 - También se calculó un índice con componentes principales (que reparte los pesos según lo que las variables tienen

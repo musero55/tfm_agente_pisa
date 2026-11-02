@@ -113,7 +113,8 @@ with st.sidebar:
             f"💡 **Memoria acotada:** el agente recibe solo los últimos {VENTANA_MENSAJES} mensajes de la "
             "conversación más sus instrucciones, lo que mantiene estable el consumo de tokens por pregunta.\n\n"
             "💡 **Ponderación:** las medias usan el peso de senado, que equivale al peso del alumno dentro de "
-            "cada país y edición y da el mismo peso a cada país y edición en el panel."
+            "cada país y edición. En el panel cada país pesa casi lo mismo (entre el 6 y el 12 %), según cuántos "
+            "de sus alumnos entran en el modelo, igual que en la regresión y el XGBoost."
         )
 
 

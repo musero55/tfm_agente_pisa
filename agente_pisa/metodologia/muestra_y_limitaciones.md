@@ -35,8 +35,12 @@
 - La nota de matemáticas de PISA no es una única cifra por alumno, sino varios valores posibles (5 en 2012 y 10 en
   las demás ediciones). En la aplicación se usa su media; en el modelo se analiza cada valor por separado y se
   combinan los resultados.
-- Las medias se ponderan para que cada país y edición pese lo mismo, sin que los países con más alumnos evaluados
-  dominen los resultados.
+- Las medias se ponderan para que cada país pese casi lo mismo, sin que los países con más alumnos evaluados
+  dominen los resultados. El peso que se usa (peso de senado) hace que cada país y edición pese igual con todos los
+  alumnos de PISA. Pero no todos entran en el modelo, y cada país pierde una proporción distinta: en el panel, cada
+  país pesa entre el 6 y el 12 % en vez del 8,3 % exacto. Darles exactamente el mismo peso cambiaría las medias
+  menos de 1 punto. La aplicación, la regresión y el XGBoost usan el mismo peso, así que sus cifras son coherentes
+  entre sí.
 
 ## Limitaciones principales
 - **Asociación, no causa.** Los datos de PISA se recogen en un solo momento y son declarados por el alumno y el

@@ -30,7 +30,7 @@ agente_pisa/
 ├── evaluador/                Juez LLM y batería de casos de referencia (casos por escribir)
 ├── artefactos/               Datos que consume la app (se suben a git)
 │   ├── alumnos_modelo.parquet       Alumnos en_modelo (298.782), legibles, con la nota de matemáticas
-│   ├── coeficientes_regresion.csv   Regresión por edición, traducida al formato del agente (sección 10)
+│   ├── coeficientes_regresion.csv   Regresión por edición, traducida al formato del agente (sección 9)
 │   ├── shap_alumnos.parquet         SHAP del XGBoost de cada alumno, medio entre valores plausibles
 │   ├── metricas_modelos.csv         R², RMSE y MAE de la regresión y del XGBoost por edición
 │   ├── catalogo_graficos.csv        Los 35 gráficos que el agente y la galería pueden mostrar, con su descripción
@@ -66,9 +66,9 @@ agente.py  (LangGraph: asistente <-> herramientas, con system_prompt.md)
 
 💡 **Los mismos alumnos que el modelo.** Las estadísticas descriptivas, la regresión y el XGBoost usan los mismos 298.782 alumnos, así que las cifras del chat son coherentes entre sí.
 
-💡 **Ponderación con el peso de senado.** Todas las medias usan `SENWT`. Dentro de un país y edición es proporcional a `W_FSTUWT`, así que da la media representativa del país. En el panel da el mismo peso a cada país y edición, el mismo criterio que usa el modelo.
+💡 **Ponderación con el peso de senado.** Todas las medias usan `SENWT`. Dentro de un país y edición es proporcional a `W_FSTUWT`, así que da la media representativa del país. En el panel cada país pesa casi lo mismo: el `SENWT` suma igual en cada país y edición con todos los alumnos de PISA, pero no todos entran en el modelo y cada país pierde una proporción distinta, así que pesa entre el 6 y el 12 % (en vez del 8,3 %). Darles exactamente el mismo peso cambiaría las medias menos de 1 punto. Se deja así porque es el mismo peso que usan la regresión y el XGBoost de `models/`, y las cifras del agente son coherentes con ellos.
 
-💡 **Resultados de los modelos, no modelos.** Hay una regresión y un XGBoost por edición y por valor plausible (más de 40 modelos). La app no carga ninguno: lee tres tablas de resultados que deja el modelado en `models/` (formato en `models/README.md`). La regresión llega combinada con las reglas de Rubin y los SHAP, promediados entre valores plausibles. Así la app arranca rápido y no depende de la versión de XGBoost.
+💡 **Resultados de los modelos, no modelos.** Hay una regresión y un XGBoost por edición y por valor plausible (más de 40 modelos). La app no carga ninguno: lee tres tablas de resultados que se dejan en `models/` (formato en `models/README.md`). La regresión llega combinada con las reglas de Rubin y los SHAP, promediados entre valores plausibles. Así la app arranca rápido y no depende de la versión de XGBoost.
 
 💡 **La metodología, fuera del System Prompt.** Cómo se construye cada índice, por qué estos países, cómo se leen los modelos o qué resultados son frágiles está en `metodologia/`. `get_methodology` devuelve una nota solo cuando se pregunta por ella, y el System Prompt obliga a contestar con su texto, no con conocimiento general.
 
@@ -109,7 +109,6 @@ El agente elige las herramientas leyendo su descripción (el *docstring*) y el e
 | c) Modelos | `get_regression_weights` | Resultados de la regresión por edición (ver abajo) | Peso de una variable, qué pesa más, diferencias entre perfiles con lo demás igual, simulaciones y cambios de 2012 a 2022 |
 | | `get_xgboost_patterns` | Patrones del XGBoost a partir de los SHAP de cada alumno (ver abajo) | Qué mueve más la predicción, por qué un grupo saca más o menos y la forma de una relación |
 
-Las herramientas de la vía c) solo entran en `pisa_tools` si existe su tabla en `artefactos/`.
 
 **Temas de `get_methodology`** (uno por fichero; añadir un `.md` basta para que el agente lo vea):
 
@@ -155,26 +154,9 @@ Los niveles descriptivos usan cortes fijos, iguales en todas las ediciones:
   - *Galería de gráficos:* PNG del catálogo.
   - *Respuesta del agente:* las gráficas, las imágenes y los waterfalls del último turno, con su explicación.
 
-## 7. Guía de reutilización del código original
 
-| Código original | Dónde está ahora |
-|---|---|
-| Notebook: `client.models.list()` | `agente.py` (`listar_modelos_groq`): cruza la lista con los modelos verificados y alimenta el selector y el respaldo |
-| Notebook y script: grafo `asistente <-> tools` con `MemorySaver` y `tools_condition` | `agente.py` (`construir_agente`), igual; los modelos se eligen en cada invocación, así que cambiar de modelo no borra la memoria |
-| Notebook: registro de tokens y tool calls | `agente.py` (`_registrar_uso`), con `logging` |
-| Script: saneado de `"<|"` en los nombres de tool | `agente.py` (`asistente`), igual |
-| Script y notebook: `trim_messages` | `agente.py` (`ventana_deslizante`), con 4 mensajes |
-| `app.py`: `thread_id` por sesión, streaming y limpieza de imágenes Markdown | `app.py`, igual |
-| `herramientas.py`: normalizadores con `difflib`, asignatura y salida por herramienta | `herramientas.py`: el mismo patrón de normalización, ahora para países, `estratos fijos`, niveles y variables del alumno y de los modelos |
-| `system_prompt.md` | Mismas secciones (rol, idioma, estilo y guardarraíles), con el alcance actual y el enrutado de las 5 rutas |
-| Notebook: Gradio y evaluación | `agente_pisa.ipynb`, importando el agente desde `agente.py` |
-| `evaluador/` | El juez (`evaluator.py`, `judge_prompt.md`) sigue igual. `reference_test.py` está vacío: hay que escribir `CASOS_TEST_PISA` con preguntas de la línea actual |
 
-Herramientas retiradas, porque su contenido pasó al anexo:
-- **Presupuesto, macroeconomía y proyecciones OLS:** `get_country_data`, `get_cross_country_stats`, `get_cross_variable_stats`, `analyze_temporal_trend` y `predict_future_trend`.
-- **Modelo por estrato:** `get_feature_importance`, `predict_and_explain_performance` y `simulate_scenario`. Las sustituyen `get_regression_weights` (simulación) y `get_xgboost_patterns` (importancia y explicación de un grupo).
-
-## 8. Ejecución
+## 7. Ejecución
 
 **Local** (entorno `tfm_env`, desde la raíz del repositorio):
 
@@ -190,7 +172,7 @@ Se abre en `http://localhost:8501`. La clave de Groq se lee de `agente_pisa/.env
 2. *New app*, con *Main file path* `agente_pisa/app.py`.
 3. En *Advanced settings*: Python 3.12 y el secreto `GROQ_API_KEY = "..."`.
 
-## 9. System Prompt
+## 8. System Prompt
 
 `system_prompt.md` fija el alcance (solo matemáticas, 12 países, alumnos del modelo, aviso de 2018), el estilo, los guardarraíles y el enrutado en 5 rutas:
 
@@ -202,7 +184,7 @@ Se abre en `http://localhost:8501`. La clave de Groq se lee de `agente_pisa/.env
 
 El marco teórico no va en el System Prompt, que se envía en cada llamada. Encaja mejor como una nota más (`metodologia/marco_teorico.md`), que el agente solo lee cuando se pregunta por él.
 
-## 10. Traducción de la entrega del modelado
+## 9. Traducción de la entrega del modelado
 
 La tabla de la regresión de `models/` tiene un formato distinto del que usa el agente. `preparar_artefactos.py` la traduce sin tocar el original:
 

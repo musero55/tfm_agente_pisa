@@ -5,7 +5,8 @@
   de igual origen social; si esa relación cambia según el perfil del centro, y si ha cambiado de 2012 a 2022.
 - La regresión es el modelo principal: da un coeficiente con su intervalo. El XGBoost sirve para comprobar si la
   regresión deja fuera curvas o interacciones importantes.
-- Se estima un modelo por edición, con los mismos 298.782 alumnos de los 12 países. Cada país pesa lo mismo.
+- Se estima un modelo por edición, con los mismos 298.782 alumnos de los 12 países. Cada país pesa casi lo mismo
+  (ver la nota de muestra y limitaciones).
 - PISA da varios valores posibles de la nota de cada alumno (5 en 2012, 10 en las demás ediciones). Cada modelo se
   repite con cada uno y los resultados se combinan; usar uno solo daría errores demasiado pequeños.
 

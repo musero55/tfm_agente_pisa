@@ -53,14 +53,14 @@ Una regresión y un XGBoost por edición, estimados con cada valor plausible. El
   - [x] `GRAFICOS_RECURSOS_ALUMNO`: los 4 gráficos de cómo se forma el índice de recursos ya se copian (catálogo de 35). Están calculados con 33 países de la OCDE (`01_EDA_recursos_alumno`, celda 2), así que su descripción lo dice.
 - [ ] Marco teórico: escribirlo como nota `metodologia/marco_teorico.md` cuando el informe esté cerrado. El System Prompt ya no tiene el bloque reservado (se quitó en `e8855de`), y así no gasta tokens en cada llamada.
 - [ ] Evaluador: `evaluador/reference_test.py` está vacío. Escribir casos de la línea actual: `estratos fijos`, compromiso, recursos, países del panel, aviso de 2018, preguntas de metodología y, ya con modelos, coeficientes, unidades y fiabilidad.
-- [x] `README_ARQUITECTURA.md` actualizado: etapas, qué hace cada herramienta y cuándo se llama, temas de metodología, tokens y la traducción de la entrega (sección 10, que sustituye a `ADAPTACION_MODELOS.md`).
+- [x] `README_ARQUITECTURA.md` actualizado: etapas, qué hace cada herramienta y cuándo se llama, temas de metodología, tokens y la traducción de la entrega (sección 9, que sustituye a `ADAPTACION_MODELOS.md`).
 - [x] `app.py` probado con las herramientas nuevas (`AppTest`, 2026-11-02): arranca sin errores y el waterfall llega al panel. No necesita más cambios.
-- [x] Despliegue en Streamlit Cloud (pasos en `README_ARQUITECTURA.md`, sección 8).
+- [x] Despliegue en Streamlit Cloud (pasos en `README_ARQUITECTURA.md`, sección 7).
 
 ## Qué quitar al terminar
 
 - [x] `ENTREGA_MODELOS.md` (borrado; las referencias del código apuntan ahora a `models/README.md`).
-- `ADAPTACION_MODELOS.md`: su contenido ya está en `metodologia/modelos.md` y en la sección 10 de `README_ARQUITECTURA.md`. Se puede borrar.
+- `ADAPTACION_MODELOS.md`: su contenido ya está en `metodologia/modelos.md` y en la sección 9 de `README_ARQUITECTURA.md`. Se puede borrar.
 - `REQUISITOS_PENDIENTES.md` (este fichero).
 - En `preparar_artefactos.py`: los gráficos comentados que no se usen, los `#Check` y los textos «pendiente del modelado» / «Etapa 2».
 - Las menciones a «etapa 2» y «se añadirá» en `herramientas.py`, `datos.py`, `config.py`, `graficos.py` y `system_prompt.md`.

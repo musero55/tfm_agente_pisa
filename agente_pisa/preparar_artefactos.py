@@ -14,7 +14,7 @@ Ficheros generados:
 Resultados de los modelos, solo si existen en models/ (formato en models/README.md):
     shap_alumnos.parquet       SHAP del XGBoost de cada alumno, medio entre valores plausibles.
     coeficientes_regresion.csv Regresión por edición, combinada con las reglas de Rubin, traducida al formato del
-                               agente (README_ARQUITECTURA.md, sección 10).
+                               agente (README_ARQUITECTURA.md, sección 9).
     metricas_modelos.csv       R², RMSE y MAE por modelo y edición.
 """
 import shutil
@@ -304,7 +304,7 @@ def copiar_graficos() -> pd.DataFrame:
 CLAVES_ALUMNO = ["CNT", "year", "CNTSCHID", "CNTSTUID"]
 TIPOS_CLAVES = {"CNT": str, "year": "int64", "CNTSCHID": "int64", "CNTSTUID": "int64"}   # para unir sin fallos de tipo
 COLUMNAS_SHAP = CLAVES_ALUMNO + ["valor_base", "prediccion"]
-# El modelado entregó la regresión con otro formato (models/README.md); se traduce al del agente (README_ARQUITECTURA.md, sección 10)
+# El modelado entregó la regresión con otro formato (models/README.md); se traduce al del agente (README_ARQUITECTURA.md, sección 9)
 COLUMNAS_COEFICIENTES = ["edicion", "especificacion", "tipo", "variable", "perfil", "unidad", "coeficiente", "error_tipico",
                          "ic_inf", "ic_sup", "p_valor", "alumnos", "poco_representativo"]
 COLUMNAS_METRICAS = ["edicion", "modelo", "conjunto", "r2", "rmse", "mae", "n_alumnos"]

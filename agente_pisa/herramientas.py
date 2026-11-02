@@ -10,8 +10,9 @@ Herramientas (Tool Calling) del agente PISA, organizadas en tres vías:
      get_xgboost_patterns (importancia, contribución y forma a partir de los SHAP del XGBoost de cada alumno).
 
 Todas las cifras son de matemáticas, la nota del alumno en este TFM, en los 12 países del panel común.
-Las medias se ponderan con SENWT: dentro de un país y edición equivale al peso del alumno, y en el panel
-da el mismo peso a cada país y edición.
+Las medias se ponderan con SENWT: dentro de un país y edición equivale al peso del alumno. En el panel cada país
+pesa casi lo mismo: el SENWT suma igual en cada país y edición con todos los alumnos de PISA, pero no todos entran
+en el modelo, así que aquí cada uno pesa entre el 6 y el 12 %. Es el mismo peso que usan la regresión y el XGBoost.
 
 Las herramientas que muestran una imagen devuelven su referencia en la clave "imagen" del JSON;
 la app la recoge de los ToolMessage, por lo que el LLM no necesita repetirla en su respuesta.
@@ -254,7 +255,7 @@ def get_math_stats(
             grupos, pocos = {}, []
             for categoria, g in df.groupby(col_grupo, observed=True):
                 clave = int(categoria) if col_grupo == "year" else str(categoria)
-                if col_grupo in ("CNT", "year"):   # cada país y edición pesa lo mismo: el % no aporta
+                if col_grupo in ("CNT", "year"):   # su % solo refleja cuántos alumnos entran en el modelo: no aporta
                     grupos[clave] = resumen(g)
                 else:
                     grupos[clave] = {"media": resumen(g), "pct": _r(100 * g["SENWT"].sum() / peso_total, 1)}
