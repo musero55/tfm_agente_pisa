@@ -29,7 +29,8 @@ Hay dos versiones:
 
 ## Cómo se lee un coeficiente
 - Coeficiente común de los recursos en 2022, unos 6 puntos: «entre dos alumnos del mismo país, del mismo perfil de
-  centro y de igual origen social, el que tiene un recurso de estudio más saca de media unos 6 puntos más».
+  centro y de igual origen social, el que tiene uno más de los seis recursos de estudio (por ejemplo, también
+  ordenador para estudiar) saca de media unos 6 puntos más».
 - No es la relación con todos los alumnos mezclados. Sin el efecto fijo de perfil, parte de la diferencia de nota
   entre tipos de centro se atribuiría a los recursos, porque los centros con mejores notas también tienen alumnos con
   más recursos. El efecto fijo separa las dos cosas: el nivel de cada perfil va por un lado y el coeficiente por otro.
@@ -54,9 +55,14 @@ Hay dos versiones:
 ## Unidades
 - La regresión se estima con las variables tipificadas (puntos por desviación típica, calculada con las cuatro
   ediciones juntas). Sirve para comparar variables entre sí: «el compromiso pesa el doble que los recursos».
-- La aplicación usa unidades originales: puntos por recurso de estudio, por punto del índice de compromiso, etc. Es
-  el mismo coeficiente dividido por la desviación típica; no es otro modelo. Ejemplo: recursos en 2012, 5,44 por
-  desviación típica = 5,80 por recurso. Privado urbano grande en 2022: 17,65 por desviación típica = 18,79 por recurso.
+- La aplicación usa unidades originales: en los recursos, puntos por cada uno más de los seis objetos que se
+  cuentan (habitación propia, ordenador, internet, libros de ayuda, libros técnicos y diccionario); en el compromiso,
+  por punto del índice. Es el mismo coeficiente dividido por la desviación típica; no es otro modelo. Ejemplo:
+  recursos en 2012, 5,44 por desviación típica = 5,80 por cada recurso más. Privado urbano grande en 2022: 17,65 por
+  desviación típica = 18,79 por cada recurso más.
+- Al hablar de recursos, decir qué objetos son, no «un punto» de un índice. La mayoría de los alumnos tiene ya 5 o 6
+  de los seis (en 2022, el 84 %; con 3 o menos, el 5 %): «tener el doble» solo es posible para muy pocos, y para el
+  resto el margen es de uno como mucho.
 - En el compromiso apenas cambia, porque su índice ya tiene desviación típica ≈ 1.
 - Las notas de robustez y de perfiles de centro citan cifras por desviación típica. Al dar una cifra, decir siempre
   en qué unidad está y no comparar cifras de unidades distintas.
@@ -70,7 +76,8 @@ Hay dos versiones:
 
 ## Resultados principales de la regresión
 - Compromiso: unos 10 a 12 puntos por punto del índice en todas las ediciones; igual en todos los perfiles.
-- Recursos de estudio: unos 5 a 6 puntos por recurso, estables de 2012 a 2022; iguales en todos los perfiles salvo
+- Recursos de estudio: unos 5 a 6 puntos por cada uno más de los seis, estables de 2012 a 2022; iguales en todos
+  los perfiles salvo
   en 2022, por el privado urbano grande, que depende de Australia (ver la nota de perfiles de centro).
 - La subida del compromiso de 2012 a 2022 (+1,5 puntos) es frágil (ver la nota de robustez).
 - Pesan más algunos controles que las variables de interés: la composición social del centro y los libros en casa.

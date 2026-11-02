@@ -368,7 +368,8 @@ def get_methodology(topic: Literal[TEMAS_METODOLOGIA]) -> str:
 # Variables de la regresión y unidad de su coeficiente en unidades originales (las de alumnos_modelo)
 UNIDADES_REGRESION = {
     "Indice_Compromiso_Competencia": "puntos por cada punto más del índice (≈ 1 desviación típica)",
-    "recursos_estudio": "puntos por cada recurso de estudio más (de 0 a 6)",
+    "recursos_estudio": "puntos de nota por cada uno más de los seis recursos de estudio: habitación propia, "
+                        "ordenador, internet, libros de ayuda, libros técnicos y diccionario",
     "HISEI_TREND": "puntos por cada punto más de ocupación de los padres (escala de 11 a 89)",
     "PAREDINT_TREND": "puntos por cada año más de estudios de los padres",
     "riqueza_hogar": "puntos por cada coche o baño más (de 0 a 6)",
@@ -388,10 +389,10 @@ SINONIMOS_REGRESION = {
 }
 VARIABLES_POR_PERFIL = ("Indice_Compromiso_Competencia", "recursos_estudio")   # las únicas con coeficiente por perfil
 PERFIL_REFERENCIA = "PUB_URB_MED"
-# Cambio máximo con sentido en una simulación: el recorrido de la variable en los datos
-RECORRIDO = {"Indice_Compromiso_Competencia": 3.6, "recursos_estudio": 6, "HISEI_TREND": 78, "PAREDINT_TREND": 13,
-             "riqueza_hogar": 6, "libros": 5, "composicion_social_centro": 3.7, "dotacion_centro": 8.3,
-             "sexo_femenino": 1, "inmigrante": 1}
+# Valores mínimo y máximo de cada variable en los datos: una simulación no puede salirse de ellos
+RANGO = {"Indice_Compromiso_Competencia": (-2.1, 1.54), "recursos_estudio": (0, 6), "HISEI_TREND": (11, 89),
+         "PAREDINT_TREND": (3, 16), "riqueza_hogar": (0, 6), "libros": (1, 6), "composicion_social_centro": (-2.53, 1.2),
+         "dotacion_centro": (-4.32, 3.98), "sexo_femenino": (0, 1), "inmigrante": (0, 1)}
 # Resultados que no aguantan las comprobaciones de robustez (metodologia/robustez.md): se avisan en la propia salida
 # cuando la consulta incluye las ediciones indicadas. (variable, estrato) -> (ediciones, aviso)
 AVISOS_FRAGILES = {
@@ -401,7 +402,9 @@ AVISOS_FRAGILES = {
         "2022 viene de los deberes y deja de distinguirse de cero al quitar algunos países (nota de robustez)"),
 }
 AVISOS_SIMULACION = {
-    "recursos_estudio": "cuenta lineal: cerca de 6 recursos la ganancia real es menor (efecto techo)",
+    "recursos_estudio": "Cuenta lineal. Casi todos los alumnos tienen ya 5 o 6 de los seis recursos (ver "
+                        "'recursos_del_alumnado'): «el doble» o «muchos más» solo es posible para quien tiene pocos. "
+                        "Cerca de 6 la ganancia real es menor (efecto techo)",
     "Indice_Compromiso_Competencia": "el índice solo toma 12 valores, de -2,1 a 1,5: el cambio debe caber en ese rango",
 }
 
@@ -465,10 +468,26 @@ def _bloque(filas: pd.DataFrame, cambio: Optional[float]) -> dict:
     return por_edicion
 
 
+def _contexto_recursos(years: list[int]) -> dict:
+    """Cuántos de los seis recursos tiene el alumnado en cada edición (media y reparto, ponderado con SENWT)."""
+    alumnos = cargar_alumnos()
+    contexto = {}
+    for year in years:
+        g = alumnos[alumnos["year"] == year]
+        cuantos = np.floor(g["recursos_estudio"] + 0.5)   # respuestas parciales reescaladas (4,8...) al entero
+        pesos = g["SENWT"]
+        pct = lambda filtro: _r(100 * pesos[filtro].sum() / pesos.sum(), 0)
+        contexto[year] = {"media_de_6": _r(np.average(g["recursos_estudio"], weights=pesos), 1),
+                          "pct_con_los_6": pct(cuantos == 6), "pct_con_5": pct(cuantos == 5),
+                          "pct_con_3_o_menos": pct(cuantos <= 3)}
+    return contexto[years[0]] if len(years) == 1 else contexto
+
+
 @tool
 def get_regression_weights(variable: Optional[str] = None, year: Union[int, str] = 2022,
                            tipo_centro: Optional[str] = None, ubicacion: Optional[str] = None,
-                           tamano: Optional[str] = None, cambio: Optional[float] = None) -> str:
+                           tamano: Optional[str] = None, cambio: Optional[float] = None,
+                           desde: Optional[float] = None) -> str:
     """
     Results of the project's linear regression of the math score (one per edition). Coefficients compare students of
     the same country and school profile with the same social background; they are associations, not causal effects.
@@ -480,8 +499,11 @@ def get_regression_weights(variable: Optional[str] = None, year: Union[int, str]
     - variable='perfil': score difference of each school profile versus public urban medium schools, with everything
       else equal. Not the raw difference in mean scores. Use only the filters the user mentions: for "private vs
       public" pass no filter, so that all profiles (public ones included) can be compared.
-    - cambio: linear simulation, e.g. variable='recursos', cambio=2 -> 'cambio_total_nota' = total score change for
-      2 more study resources, with its own interval 'ic_cambio_total' ('coef' and 'ic' stay per unit).
+    - cambio: linear simulation -> 'cambio_total_nota', with its own interval 'ic_cambio_total' ('coef' and 'ic' stay
+      per unit). Study resources are counted as items out of six (own room, computer, internet, study-help books,
+      technical books, dictionary): translate the user's words into items, e.g. "double" for a student with 3 ->
+      desde=3, cambio=3; "without a computer" -> cambio=-1. Most students already have 5 or 6.
+    - desde: optional starting value of the student; the tool checks that desde + cambio stays within the scale.
     - year: 2012, 2015, 2018, 2022 or 'all'. For any "has it changed?" question use year='all' in a single call:
       it returns every edition and the 2012-2022 change with its p-value.
     """
@@ -524,12 +546,22 @@ def get_regression_weights(variable: Optional[str] = None, year: Union[int, str]
         else:
             salida["variable"] = NOMBRES_REGRESION[columna]
             salida["unidad"] = UNIDADES_REGRESION[columna]
+            minimo, maximo = RANGO[columna]
             if cambio is not None:
-                if abs(cambio) > RECORRIDO[columna]:
-                    return _error(f"Un cambio de {cambio} se sale del recorrido de la variable (máximo {RECORRIDO[columna]}).")
+                if desde is not None:
+                    if not minimo <= desde <= maximo:
+                        return _error(f"El punto de partida {desde} está fuera de la escala ({minimo} a {maximo}).")
+                    if not minimo <= desde + cambio <= maximo:
+                        return _error(f"Partiendo de {desde}, el cambio solo puede ir de {_r(minimo - desde)} a "
+                                      f"{_r(maximo - desde)}: la escala va de {minimo} a {maximo}.")
+                    salida.update({"desde": desde, "hasta": _r(desde + cambio)})
+                elif abs(cambio) > maximo - minimo:
+                    return _error(f"Un cambio de {cambio} se sale de la escala de la variable ({minimo} a {maximo}).")
                 salida["cambio_simulado"] = cambio
                 if columna in AVISOS_SIMULACION:
                     avisos.append(AVISOS_SIMULACION[columna])
+            if columna == "recursos_estudio":
+                salida["recursos_del_alumnado"] = _contexto_recursos(years)
             filas_comun = comun[(comun["variable"] == columna) & (comun["estrato"] == "todos")]
             if perfiles is not None and columna in VARIABLES_POR_PERFIL:
                 # Lo pedido (el perfil) va primero; el común queda detrás, solo para comparar

@@ -37,6 +37,7 @@ Cuántos recursos para estudiar tiene el alumno en casa. Es una de las dos varia
 ## Qué muestran los datos
 - Con el origen social controlado y comparando alumnos del mismo país, tener más recursos de estudio se asocia con
   una nota algo más alta: unos 5 o 6 puntos de matemáticas por cada desviación típica (5,4 en 2012, 5,6 en 2015,
-  4,9 en 2018 y 5,9 en 2022), que equivale aproximadamente a un recurso más. Es estable: el cambio de 2012 a 2022 no
+  4,9 en 2018 y 5,9 en 2022), que equivale aproximadamente a tener uno más de los seis (por ejemplo, también
+  ordenador para estudiar). Es estable: el cambio de 2012 a 2022 no
   se distingue de cero. Es una asociación, no un efecto causal.
 - La relación es creciente pero se aplana cerca del máximo: tener los seis recursos añade poco sobre tener cinco.

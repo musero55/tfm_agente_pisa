@@ -19,7 +19,7 @@
   cada nivel de impuntualidad a unos 10 a 13 puntos menos, en 2012 y en 2022. Se mantiene con más alumnos (sin
   exigir la pregunta de deberes) y con 25 países.
 - **Los recursos de estudio se asocian a más nota, de forma estable**: unos 5 o 6 puntos por desviación típica
-  (aproximadamente, por cada recurso más; entre 4,5 y 6,5 según la especificación). El cambio de 2012 a 2022 nunca
+  (aproximadamente, por tener uno más de los seis recursos; entre 4,5 y 6,5 según la especificación). El cambio de 2012 a 2022 nunca
   se distingue de cero con los 12 países (va de 0,0 a 0,8 puntos), salvo al quitar Eslovaquia (1,5, p = 0,041). Por tramos, tener todos menos uno o los
   seis sigue asociado a más nota, y tener los seis añade poco sobre tener cinco.
 - **Las conclusiones no dependen de los controles del centro.** Con la escasez de recursos los coeficientes no se

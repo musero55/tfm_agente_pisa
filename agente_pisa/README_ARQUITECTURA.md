@@ -127,10 +127,10 @@ El agente elige las herramientas leyendo su descripción (el *docstring*) y el e
 | Llamada | Devuelve | Pregunta típica |
 |---|---|---|
 | Sin `variable` | El peso de todas las variables en una edición, ordenadas por puntos por desviación típica (la única forma justa de compararlas) | «¿Qué pesa más en la nota?» |
-| `variable='recursos'` | Coeficiente común con su unidad («por cada recurso más»), intervalo y p | «¿Cuánto se asocian los recursos con la nota?» |
+| `variable='recursos'` | Coeficiente común con su unidad (por cada uno más de los seis recursos, que se nombran), intervalo, p y cuántos recursos tiene el alumnado (media y % con los seis) | «¿Cuánto se asocian los recursos con la nota?» |
 | Con filtros de perfil | El coeficiente dentro de esos perfiles, y detrás el común para comparar. Solo compromiso y recursos tienen uno por perfil | «¿Y en los privados urbanos grandes?» |
 | `variable='perfil'` | Diferencia de nota de cada perfil frente al público urbano mediano, con alumnos iguales en todo lo demás | «Con alumnos parecidos, ¿se saca más en los privados?» |
-| `cambio=2` | Simulación lineal (coeficiente × cambio) con su intervalo y el aviso del efecto techo | «¿Y si tuviera 2 recursos más?» |
+| `cambio`, `desde` | Simulación lineal (coeficiente × cambio) con su intervalo y el aviso del efecto techo. Con `desde`, comprueba que el resultado cabe en la escala (los recursos van de 0 a 6) | «¿Y si un alumno con 3 recursos tuviera el doble?», «¿y si le quitamos el ordenador?» |
 | `year='all'` | Las cuatro ediciones y el cambio de 2012 a 2022 con su p | «¿Ha cambiado el peso del compromiso?» |
 
 **`get_xgboost_patterns(analisis, year, variable, filtros, group_by)`**
