@@ -396,8 +396,10 @@ RANGO = {"Indice_Compromiso_Competencia": (-2.1, 1.54), "recursos_estudio": (0, 
 # Resultados que no aguantan las comprobaciones de robustez (metodologia/robustez.md): se avisan en la propia salida
 # cuando la consulta incluye las ediciones indicadas. (variable, estrato) -> (ediciones, aviso)
 AVISOS_FRAGILES = {
-    ("recursos_estudio", "PRI_URB_MACRO"): ({2022}, "Resultado frágil: el salto de 2022 en el privado urbano grande "
-        "depende de Australia; sin Australia no se distingue de cero (nota de robustez)"),
+    ("recursos_estudio", "PRI_URB_MACRO"): ({2022}, "Resultado frágil: la subida de 2012 a 2022 del coeficiente de los "
+        "recursos en el privado urbano grande (unos 14 puntos por desviación típica) depende solo de Australia: sin "
+        "ella la subida baja a 6,8 y no se distingue de cero; el coeficiente no se anula. No es su diferencia de nota "
+        "(+10) (nota de robustez)"),
     ("Indice_Compromiso_Competencia", "todos"): ({2012, 2022}, "Resultado frágil: la subida del coeficiente del índice "
         "de 2012 a 2022 viene de los deberes y deja de distinguirse de cero al quitar algunos países (nota de "
         "robustez). No afecta a las cifras de faltar a clase ni de llegar tarde, que son estables"),
@@ -566,6 +568,8 @@ def get_regression_weights(variable: str = "", year: Union[int, str] = 2022, tip
             salida["referencia"] = f"{_nombre_perfil(PERFIL_REFERENCIA)} (diferencia 0 por definición)"
             salida["unidad"] = "puntos de diferencia frente a la referencia, con alumnos iguales en todo lo demás"
             salida["por_perfil"] = {_nombre_perfil(p): _bloque(g, None) for p, g in filas.groupby("estrato")}
+            avisos.append("Diferencias con los 12 países juntos: no hay cifras por país ni se comprobaron quitando "
+                          "países. No es la cautela de Australia, que es sobre el coeficiente de los recursos")
             if cambio is not None:
                 avisos.append("La simulación no se aplica a la diferencia entre perfiles")
         else:

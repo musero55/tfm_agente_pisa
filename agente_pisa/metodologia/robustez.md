@@ -32,10 +32,13 @@
   quitar Australia, Reino Unido, Hungría, Italia, Eslovaquia o Eslovenia, o con el nivel socioeconómico del centro.
   Además, viene del componente de deberes, el que peor se compara entre ediciones (ver la nota de compromiso).
   Se puede decir que la relación del compromiso con la nota se mantiene o sube algo, no que se haya reforzado.
-- **El privado urbano grande en 2022 depende de Australia.** Con los 12 países, el coeficiente de los recursos de
-  estudio en ese perfil sube unos 14 puntos de 2012 a 2022, y es lo que hace que los perfiles difieran entre sí en
-  2022. Aguanta todas las comprobaciones (también por tramos y con otros controles) menos una: sin Australia, la
-  subida baja a 6,8 puntos (p = 0,316) y los perfiles dejan de diferenciarse. Ver la nota de perfiles de centro.
+- **El privado urbano grande en 2022 depende de Australia.** Lo frágil es el coeficiente de los recursos de
+  estudio en ese perfil, no su diferencia de nota frente al público urbano mediano (los +10 puntos de 2022). Con
+  los 12 países, ese coeficiente sube unos 14 puntos de 2012 a 2022 (de 3,4 a 17,6), y por esa subida el
+  coeficiente de los recursos difiere entre perfiles en 2022. Aguanta todas las comprobaciones (también por tramos y
+  con otros controles) menos una: sin Australia, la subida baja a 6,8 puntos (p = 0,316) y el coeficiente de los
+  recursos deja de diferir entre perfiles. Al quitar cualquiera de los otros 11 países la subida se mantiene (de
+  13,9 a 17,0 puntos, p ≤ 0,003): Australia es el único país del que depende. Ver la nota de perfiles de centro.
 - **Con 25 países la imagen de los recursos es algo distinta.** Su coeficiente sí sube de 2012 a 2022 (de 4,5 a 6,1,
   p = 0,002) y en 2022 los privados urbanos grandes y medianos quedan por encima de los públicos, sin depender de
   ningún país (tampoco de Australia). Es un indicio de un patrón más general, pero ese panel tiene otros países,
@@ -45,8 +48,19 @@
 - **El compromiso se asocia a la nota igual en todos los perfiles de centro**, y su cambio de 2012 a 2022 también
   es igual en todos. Ningún país quitado cambia esta conclusión con los 12 países.
 
+## Lo que no se comprobó
+- **Las diferencias de nota entre perfiles** (cuánto más o menos saca cada perfil que el público urbano mediano con
+  lo demás igual) no se repitieron quitando países ni con las otras variantes. No hay cifras para decir si dependen
+  de algún país: ni frágiles ni firmes, sin comprobar.
+- **No hay resultados por país.** Todas las cifras del modelo juntan los 12 países (cada alumno se compara con los
+  de su país).
+
 ## Cómo usar esta nota
 - Si el usuario pregunta si un resultado es fiable, contestar con lo que aguanta y lo que no, en lenguaje sencillo.
 - No presentar como hallazgo firme la subida del compromiso ni la del privado urbano grande.
+- Si preguntan por qué es frágil «el resultado del privado urbano grande», empezar aclarando que lo frágil es la
+  subida del coeficiente de sus recursos (de 3,4 a 17,6 puntos por desviación típica), no los +10 puntos de nota que
+  saca frente al público urbano mediano, que no se comprobaron.
+- De lo que no se comprobó, decir que no está documentado; no deducir que es estable.
 - Origen: `notebooks/fase_3_modelado/03_robustez_regresion.ipynb`; todas las cifras en
   `data/processed/resultados_robustez.parquet`.

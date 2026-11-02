@@ -49,6 +49,8 @@ Hay dos versiones:
   pequeño (+5) por arriba, y el concertado urbano pequeño (−12) y el privado urbano pequeño (−18) por abajo; en los
   demás la diferencia es pequeña o incierta. Que un perfil saque más con lo demás igual no prueba que el centro sea la causa: puede haber
   diferencias entre alumnos que el modelo no mide.
+- Estas diferencias juntan los 12 países y no se repitieron quitando países. La cautela de Australia es sobre el
+  coeficiente de los recursos del privado urbano grande, no sobre su +10 (ver la nota de robustez).
 - En la regresión por perfil también hay un punto de partida, pero allí cada perfil tiene su propia inclinación y la
   distancia entre perfiles cambia según los recursos del alumno; por eso no se usa.
 
