@@ -18,6 +18,8 @@ Regresión por edición de la nota sobre las variables de interés, con efecto f
     * `estimar_por_edicion`: `estimar_con_rubin` en cada edición, para repetir el modelo con otras variables.
     * `cambio_entre_ediciones`: cambio de unos coeficientes entre dos ediciones y contraste de que es igual en todos.
     * `contraste_igualdad`: contraste de Wald de que varios coeficientes son iguales entre sí.
+    * `valores_plausibles_completos`: los valores plausibles de un dominio que tienen todas las filas.
+    * `coeficientes_con_error`: «coeficiente (error típico)» de unos términos por edición, para mostrarlos.
 
 Los errores típicos agrupados por centro aproximan los de PISA; `03_errores_brr` los compara con los de BRR en
 el modelo principal.
@@ -66,6 +68,11 @@ def matriz_diseno(datos: pd.DataFrame, por_perfil: bool, controles: list[str] = 
     diseno = diseno.join(datos[controles + indicadores])
     constantes = [columna for columna in diseno.columns if columna != 'constante' and diseno[columna].nunique() < 2]
     return diseno.drop(columns=constantes)
+
+
+def valores_plausibles_completos(datos: pd.DataFrame, dominio: str = 'MATH') -> list[str]:
+    """Columnas de valores plausibles de `dominio` que tienen todas las filas de `datos` (5 en 2012, 10 en las demás)."""
+    return [columna for columna in datos.columns if columna.startswith('PV') and columna.endswith(dominio) and datos[columna].notna().all()]
 
 
 def mco_ponderado(diseno: pd.DataFrame, nota: pd.Series, pesos: pd.Series, grupos: pd.Series) -> tuple[pd.Series, pd.DataFrame]:
@@ -133,7 +140,7 @@ def estimar_con_rubin(datos: pd.DataFrame, diseno: pd.DataFrame, dominio: str = 
     replicados de `pesos_replicados` (mismas filas que `datos`), la de BRR (`mco_brr`). Devuelve una tabla por
     coeficiente (coeficiente, error típico, intervalo del 95 %, valor p y % de la varianza que viene de los valores
     plausibles) y la matriz de covarianzas total."""
-    valores_plausibles = [columna for columna in datos.columns if columna.startswith('PV') and columna.endswith(dominio) and datos[columna].notna().all()]
+    valores_plausibles = valores_plausibles_completos(datos, dominio)
     if replicas is None:
         estimaciones, covarianzas = [], []
         for columna in valores_plausibles:
@@ -201,3 +208,15 @@ def contraste_igualdad(coeficientes: pd.Series, covarianzas: pd.DataFrame, nombr
     estadistico = float(diferencias @ np.linalg.solve(varianza, diferencias))
     grados = len(nombres) - 1
     return estadistico, grados, float(stats.chi2.sf(estadistico, grados))
+
+
+def coeficientes_con_error(tabla: pd.DataFrame, terminos: list[str], decimales: int = 1) -> pd.DataFrame:
+    """«coeficiente (error típico)» como texto, redondeados a `decimales`, de los `terminos` de `tabla` (la de
+    `estimar_por_edicion`, con índice edición y término): una fila por término, en el orden de `terminos` y sin los
+    que no están en `tabla`, y una columna por edición."""
+    nombre_termino = tabla.index.names[1]
+    filas = tabla.reset_index()
+    filas = filas[filas[nombre_termino].isin(terminos)]
+    texto = filas['coeficiente'].round(decimales).astype(str) + ' (' + filas['error_tipico'].round(decimales).astype(str) + ')'
+    tabla_texto = filas.assign(texto=texto).pivot(index=nombre_termino, columns='year', values='texto')
+    return tabla_texto.loc[[termino for termino in terminos if termino in tabla_texto.index]]
