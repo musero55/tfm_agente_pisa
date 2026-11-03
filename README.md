@@ -1,128 +1,88 @@
-# Análisis de los Informes PISA - Trabajo Fin de Máster (TFM)
+# Compromiso, recursos y nota en PISA (2012-2022) - Trabajo Fin de Máster
 
- Aquí dentro está montado todo el entorno de desarrollo y los análisis estadísticos de los informes PISA. Propongo la siguiente estructura incial para el desarollo del proyecto y que sea algo coherente entre todos
+**Pregunta del TFM**: cómo ha cambiado entre 2012 y 2022 la relación del compromiso del alumno y de sus recursos de estudio con su nota de matemáticas, según el perfil de su centro.
+
+* **Datos**: microdatos de PISA 2012, 2015, 2018 y 2022, en un panel de 12 países con el índice de compromiso en las cuatro ediciones (AUS, DNK, ESP, GBR, GRC, HUN, ISL, ITA, KOR, POL, SVK y SVN). Un panel ampliado de 25 países, sin 2018, sirve de comprobación.
+* **Variables de interés**: el índice de compromiso y competencia (tiempo de deberes, absentismo e impuntualidad) y los recursos de estudio del hogar (seis objetos).
+* **Perfiles de centro**: 18 combinaciones fijas de titularidad, ubicación y tamaño.
+* **Modelos**: regresión lineal por edición con efecto fijo de país, ponderada con `SENWT`, con errores agrupados por centro y los valores plausibles combinados con las reglas de Rubin. XGBoost con SHAP sirve de contraste.
 
 ---
 
-## 🚀 Guía de Inicio Rápido
+## Puesta en marcha
 
-1. **Clonar el repositorio** y abrir la carpeta raíz en VS Code.
-2. **Verificar versión de Python**: Trabajo con las últimas versiones de las dependencias (**pandas 3.x** y **numpy 2.5+**), asi que tenemos que usar **Python >= 3.12**. Si no se actualizan estos paquetes, habrá problemas serios de compatibilidad y dependencias con el resto de librerías del proyecto.
+1. **Python 3.12 o superior.** Las dependencias usan pandas 3 y numpy 2.
+2. **Entorno con las versiones de `requirements.txt`**. Los resultados guardados se obtuvieron con esas versiones exactas, así que conviene no usar otro Python. Se crea un entorno `.venv` en la raíz y se registra como kernel `tfm_env`, que es el que tienen asignado todos los notebooks:
    ```bash
-   python --version
+   python -m venv .venv
+   .venv/Scripts/python -m pip install -r requirements.txt
+   .venv/Scripts/python -m ipykernel install --user --name tfm_env --display-name tfm_env
    ```
-3. **Instalar y actualizar dependencias**:
-   ```bash
-   pip install --upgrade -r requirements.txt
-   ```
-4. **Descargar los datos crudos**: Como los microdatos de PISA pesan un montón (`.SAS7BDAT`), están fuera del control de versiones (Git). Hay que bajarse los ficheros raw desde la carpeta compartida de **Google Drive** y guardarlos localmente en esta ruta exacta:
-   `data/raw/CY08MSP_STU_QQQ.SAS7BDAT`
-   
-   **Esta la opcion de transformar los datos SAS7BDAT a parquet para que pesen menos**
+   En Linux o macOS la ruta es `.venv/bin/python`. Desde VS Code o Jupyter, el kernel que hay que elegir es `tfm_env`.
+3. **Datos de PISA.** Los microdatos no están en git, porque pesan demasiado. Se descargan de la carpeta compartida y se guardan en `data/raw/<año>/`, con los ficheros de alumnos y de centros de cada edición. 2012 viene como `.txt` + `.sas` y se convierte antes con `src/pisa_txt_a_sav.py`. También van en `data/raw/` `escs_trend.csv` (índices reescalados de la OCDE) y los resultados publicados (`pisa_*_2000_2022.csv`).
+4. **Ejecutar los notebooks en orden** (siguiente sección). Cada uno lee las tablas que guardan los anteriores.
 
 ---
 
-## 📁 Estructura del Proyecto
+## Orden de los notebooks
 
-*   `data/raw/`: Datos originales de PISA en formato SAS (¡OJO! NUNCA se tocan ni se suben a Git).
-*   `data/intermediate/`: Resultados parciales, tablas, variables de interes (ej:semilla), dataframes para estudios en comun que lo requieran (en formato `.parquet` por eficiencia de tamaño).
-*   `data/processed/`: Datasets finales utilizados para el modelado
-*   `notebooks/`: Notebooks particulares, separados en fases de trabajo para que sea modular.
-*   `src/`: Funciones y lógica común que podemos reutilizar todos (ej. cálculo de errores de imputación y calculo de medias con PV values) para no duplicar código de forma innecesaria.
-*   `anexo/`: Trabajo que ya no forma parte de la línea principal pero se conserva (bloque exploratorio de 33 países y primer modelo por estrato), cada carpeta con sus notebooks, datos y figuras. Ver `anexo/README.md`.
-*   `obsoleto/`: Ficheros que ya no usa nadie, apartados para revisarlos antes de borrarlos. Ver `obsoleto/README.md`.
+Los notebooks están en `notebooks/`, por fases. Este es el orden de ejecución, el mismo que recoge `00_pipeline_multiedicion_PISA` («Orden de los notebooks»):
 
----
+| Paso | Notebook | Qué hace |
+|---|---|---|
+| 1 | `fase_1_data_ingestion_eda/00_pipeline_multiedicion_PISA` | Tablas maestras de alumnos y centros por edición |
+| 2 | `fase_1_data_ingestion_eda/00_Pipeline_generacion_estratos` | Perfil fijo de cada centro: titularidad, ubicación y tamaño |
+| 3 | `fase_1_data_ingestion_eda/01_EDA_notas_asignatura` | Nota media por centro y por país; reparto de la varianza de la nota |
+| 4 | `fase_1_data_ingestion_eda/01_EDA_equidad` | Desigualdad social y de recursos; `ESCS` medio y recursos de cada centro |
+| 5 | `fase_1_data_ingestion_eda/01_EDA_recursos_alumno` | Subíndice de recursos de estudio del hogar |
+| 6 | `fase_1_data_ingestion_eda/01_EDA_indice_de_compromiso_competencia` | Índice de compromiso y panel de 12 países (y el ampliado de 25) |
+| 7 | `fase_1_data_ingestion_eda/01_EDA_recursos_centro` | Dotación y escasez del centro, que entran como controles |
+| 8 | `fase_1_data_ingestion_eda/01_EDA_variables_modelo` | Alumnos del panel y huecos de las variables del modelo |
+| 9 | `fase_2_feature_engineering/02_preparacion_modelo` | Tabla del modelo, en `data/processed/` |
+| 10 | `fase_3_modelado/03_regresion_por_edicion` | Modelo principal; guarda los coeficientes en `models/` |
+| 11 | `fase_3_modelado/03_errores_brr` | Errores típicos con los 80 pesos replicados de PISA (BRR) |
+| 12 | `fase_3_modelado/03_robustez_regresion` | Comprobaciones de robustez: medida del compromiso, efecto techo, controles, panel ampliado, quitar cada país y no respuesta |
+| 13 | `fase_3_modelado/03_australia_privados_grandes` | El salto de los recursos en los privados urbanos grandes de Australia |
+| 14 | `fase_3_modelado/03_xgboost_shap` | XGBoost con SHAP; guarda los SHAP y las métricas en `models/` |
 
-## 📐 Ciclo de Vida del Dato y Estructura de Fases (`notebooks/`)
-
-para garantizar la modularidad y no perder el hilo, los cuadernos se organizarán en subcarpetas numeradas por fase (Ejemplo de estructura de subcarpeta **A Debatir**):
-
-### 📂 `fase_1_data_ingestion_eda/`
-*(Ingesta de Datos y Análisis Exploratorio)*
-Aquí se hace la carga del archivo masivo de PISA, el tratamiento de valores nulos, los filtros iniciales y el cálculo de variables latentes (las conceptuales que consideremos) por cada competencia.
-
-*   `1.0_comprension_codebook.ipynb`
-*   `1.1_eda_y_limpieza_lectura.ipynb`
-*   `1.2_eda_y_limpieza_matematicas.ipynb`
-*   `1.3_eda_y_limpieza_ciencias.ipynb`
-
-### 📂 `fase_2_feature_engineering/`
-*(Ingeniería de Características y Consolidación)*
-Fase pensada para crear los nuevos índices contextuales y hacer el *merge* de las tablas procesadas de la Fase 1 en un único dataset maestro.
-*   `2.1_construccion_indices_contexto.ipynb`
-*   `2.2_unificacion_matriz_maestra_pisa.ipynb`
-
-### 📂 `fase_3_modelado/`
-*(Modelado Predictivo y Analítica Avanzada)*
-Experimentaciones. Aquí se aplican algoritmos de Machine Learning y estadística trabajando sobre el dataset generado en la Fase 2. Cada integrante gestiona su propio estudio de forma independiente.
-*   `3.1_clustering_jerarquico_rendimiento.ipynb`
-*   `3.2_importancia_variables_random_forest.ipynb`
-*   `3.3_clustering_socioeconomico_contexto.ipynb`
-
-### 📂 `fase_4_estudio_resultados/`
-*(Visualización, Conclusiones y Reporte)*
-Fase final orientada a sacar los gráficos conclusivos bien pulidos  y las tablas finales que irán directas a la memoria escrita del TFM.
-*   `4.1_generacion_graficos_memoria.ipynb`
-*   `4.2_tablas_anexos_tfm.ipynb`
+Los notebooks tienen una estructura común: una cabecera con la pregunta que responden, secciones numeradas, una observación («Qué se ve») después de cada resultado y unos hallazgos al final, con el notebook siguiente.
 
 ---
 
-## 📐 Estándares de Nomenclatura (Obligatorios)
-
-### 1. Archivos Jupyter Notebooks
-Se utilizará una numeración secuencial según la fase en la que se esté, seguida de una descripción corta en minúsculas y separada por guiones bajos (*snake_case*).
-*   *Ejemplo:* `2.2_unificacion_matriz_maestra_pisa.ipynb`
-
-### 2. Archivos de Datos Intermedios (`data/intermediate/`)
-Cualquier tabla intermedia que se exporte en formato Parquet debe seguir este patrón: `pisa22_[competencia_o_estudio]_consolidado.parquet`.
-*   *Ejemplo:* `pisa_lectura_consolidado.parquet`
-
-### 3. Nombres de Variables y Columnas en Pandas
-*   **Códigos Oficiales PISA:** Se mantendrán estrictamente las columnas clave de PISA en **mayúsculas** tal cual vienen del archivo original para no romper los `merge` (ej. `CNT` para el país, `W_FSTUWT` para el peso, y los `PV1READ` al `PV10READ`).
-*   **Columnas Calculadas:** Cualquier columna nueva creada o calculada por el equipo se escribirá obligatoriamente en **minúsculas** y *snake_case*.
-    *   *Correcto:* `media_lectura_pisa`, `varianza_imputacion`, `nombre_pais`.
-    *   *Incorrecto:* `MediaLectura`, `Error_Imputacion`, `NombrePais`.
-
----
-
-## 🛠️ Buenas Prácticas para el Trabajo en Equipo
-
-*   **⚠️ Rutas de los Notebooks (`../../`):** Como los cuadernos ahora están metidos en subcarpetas, para acceder a `data/` o `src/` se deben subir **dos niveles** en el directorio usando la sintaxis de Python: `../../data/...` o `sys.path.append("../../")`.
-*   **No tocar notebooks de otros:** Cada uno tiene asignado su propio hilo de estudio en la Fase 3. Si se necesitan cambios en el procesamiento que hizo un compañero en la Fase 1, se le avisa previamente o se modulariza el cambio mediante una función en la carpeta `src/`.
-*   **Subir solo código limpio (¡OJO CON LOS GRÁFICOS!):** Antes de hacer un `git commit` y subir cambios a GitHub, hay que asegurarse de limpiar la salida de las celdas del notebook (*Kernel -> Clear All Outputs*). 
-    *   Al hacer esto, **se borrarán todos los textos, tablas e imágenes generadas**.  Los gráficos se guardan internamente como bloques de texto gigantescos  que hacen que el archivo `.ipynb` pesen muchisimo y que Git se vuelva loco provocando conflictos imposibles de solucionar al hacer los *merges*.
-
-    *   *Salvar los gráficos en memoria* El proyecto es reproducible, así que cualquiera puede volver a correr el notebook para verlos de nuevo. Para los gráficos finales, se incluirá código en el notebook para exportarlos directamente como archivos de imagen (`.png`, `.svg` o `.html` para Plotly) en una carpeta local dedicada, evitando así guardarlos dentro del propio cuaderno.
- 
-   ---
-
-## 🗺️ Vista Gráfica de la Estructura
-
-Para que no haya pérdidas, la estructura final del repositorio debe verse reflejada exactamente así en el explorador de archivos:
+## Estructura del proyecto
 
 ```text
-tfm-pisa/
+tfm_data_science/
 ├── data/
-│   ├── raw/                  # Datos originales .SAS7BDAT (excluidos en Git)
-│   ├── intermediate/         # Tablas y variables intermedias .parquet
-│   └── processed/            # Matrices maestras listas para modelar
+│   ├── raw/            # Microdatos y ficheros originales (fuera de git)
+│   ├── intermediate/   # Tablas intermedias de los EDA (.parquet); ver data/intermediate/README.md
+│   └── processed/      # Tabla del modelo, parámetros de escala, diccionario y resultados de robustez
 ├── notebooks/
 │   ├── fase_1_data_ingestion_eda/
-│   │   ├── 1.0_comprension_codebook.ipynb
-│   │   └── 1.1_eda_y_limpieza_lectura.ipynb
-│   ├── fase_2_feature_engineering_unification/
-│   │   ├── 2.1_construccion_indices_contexto.ipynb
-│   │   └── 2.2_unificacion_matriz_maestra_pisa.ipynb
-│   ├── fase_3_advanced_analytics_modeling/
-│   │   └──3.1_clustering_jerarquico_rendimiento.ipynb
-│   └── fase_4_insights_storytelling/
-│       ├── 4.1_generacion_graficos_memoria.ipynb
-│       └── 4.2_tablas_anexos_tfm.ipynb
-├── reports/
-│   └── figures/              # Exportaciones de imágenes (.png, .html...)
-├── src/
-│   └── __init__.py           # Permite importar las funciones comunes
-└── requirements.txt          # Dependencias (pandas 3.x, numpy 2.5+, etc.)
+│   ├── fase_2_feature_engineering/
+│   └── fase_3_modelado/
+├── src/                # Funciones comunes que usan los notebooks
+├── models/             # Resultados que lee el agente: coeficientes, SHAP y métricas (ver models/README.md)
+├── reports/            # Figuras que guardan los notebooks
+├── agente_pisa/        # Agente conversacional que responde preguntas sobre los resultados
+├── anexo/              # Trabajo previo que se conserva: bloque exploratorio de 33 países y primer modelo por estrato
+├── obsoleto/           # Ficheros apartados, pendientes de revisar antes de borrarlos
+└── requirements.txt
 ```
 
+Funciones principales de `src/`:
+
+* `pisa_pipeline.py`: lectura y validación de las tablas maestras.
+* `pisa_estadisticas.py`: medias ponderadas, valores plausibles y reparto de la varianza.
+* `recursos_alumno.py`, `recursos_centro.py` y `tabla_alumno.py`: construcción de las variables y de la tabla por alumno.
+* `preparacion_modelo.py`: perfiles, escala y matrices de los modelos.
+* `modelo_regresion.py`: regresión por edición, reglas de Rubin y contrastes.
+
+---
+
+## Convenciones
+
+* **Pesos**: `SENWT` (cada país suma 5.000) en las cifras que juntan países; `W_FSTUWT` dentro de un país.
+* **Valores plausibles**: las estimaciones se hacen con cada uno por separado y se combinan con las reglas de Rubin (10 valores plausibles; 5 en 2012).
+* **Nombres**: las columnas originales de PISA se mantienen en mayúsculas (`CNT`, `W_FSTUWT`, `PV1MATH`); las columnas nuevas van en minúsculas y *snake_case*.
+* **Rutas**: los notebooks están dos niveles por debajo de la raíz, así que leen `../../data/` y añaden `../../` a `sys.path` para importar `src`.
