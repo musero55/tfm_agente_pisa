@@ -568,6 +568,15 @@ def get_regression_weights(variable: str = "", year: Union[int, str] = 2022, tip
             salida["referencia"] = f"{_nombre_perfil(PERFIL_REFERENCIA)} (diferencia 0 por definición)"
             salida["unidad"] = "puntos de diferencia frente a la referencia, con alumnos iguales en todo lo demás"
             salida["por_perfil"] = {_nombre_perfil(p): _bloque(g, None) for p, g in filas.groupby("estrato")}
+            if len(years) > 1:
+                # 14 perfiles x 4 ediciones: sin intervalo y con los distintos de cero ya listados, porque repasarlos
+                # todos llevaba al modelo a copiar mal cifras o a razonar en bucle hasta quedarse sin salida
+                for bloque in salida["por_perfil"].values():
+                    for datos in bloque.values():
+                        datos.pop("ic", None)
+                salida["distintos_de_cero"] = {
+                    int(e): [f"{_nombre_perfil(f.estrato)} {_r(f.coeficiente):+} (p {_p(f.p_valor)})" for f in g.itertuples()]
+                    for e, g in filas[filas["p_valor"] < 0.05].groupby("edicion")}
             avisos.append("Diferencias con los 12 países juntos: no hay cifras por país ni se comprobaron quitando "
                           "países. No es la cautela de Australia, que es sobre el coeficiente de los recursos")
             if cambio is not None:

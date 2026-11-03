@@ -12,6 +12,20 @@
 - Los coeficientes están en puntos de matemáticas por desviación típica de la variable. «Cambio» es el coeficiente
   de 2022 menos el de 2012.
 
+## Qué significa «frágil»
+- Un resultado es **frágil** si sale en el modelo de partida pero deja de distinguirse de cero (p ≥ 0,05) al
+  cambiar una sola de las decisiones de arriba. Es **firme** si aguanta todas.
+- Frágil no es falso: con los 12 países el resultado existe, pero no puede presentarse como algo general.
+- Frágil no es poco representativo: eso es otra etiqueta, la de un perfil con menos de 30 centros en una edición.
+- Solo es firme lo que se comprobó: lo que no aparece en esta nota no es ni frágil ni firme.
+
+## Lo que no se comprobó
+- **Las diferencias de nota entre perfiles** (cuánto más o menos saca cada perfil que el público urbano mediano con
+  lo demás igual) no se repitieron quitando países ni con las otras variantes. No hay cifras para decir si dependen
+  de algún país: ni frágiles ni firmes, sin comprobar.
+- **No hay resultados por país.** Todas las cifras del modelo juntan los 12 países (cada alumno se compara con los
+  de su país).
+
 ## Resultados que aguantan todas las comprobaciones
 - **El compromiso se asocia a más nota en todas las ediciones**: entre unos 9 y 13 puntos por desviación típica,
   sea cual sea la especificación. Es la variable de interés con más relación con la nota.
@@ -32,9 +46,8 @@
   quitar Australia, Reino Unido, Hungría, Italia, Eslovaquia o Eslovenia, o con el nivel socioeconómico del centro.
   Además, viene del componente de deberes, el que peor se compara entre ediciones (ver la nota de compromiso).
   Se puede decir que la relación del compromiso con la nota se mantiene o sube algo, no que se haya reforzado.
-- **El privado urbano grande en 2022 depende de Australia.** Lo frágil es el coeficiente de los recursos de
-  estudio en ese perfil, no su diferencia de nota frente al público urbano mediano (los +10 puntos de 2022). Con
-  los 12 países, ese coeficiente sube unos 14 puntos de 2012 a 2022 (de 3,4 a 17,6), y por esa subida el
+- **El privado urbano grande en 2022 depende de Australia.** Esto no es su diferencia de nota de +10 frente al
+  público urbano mediano: esa diferencia no se comprobó quitando países y no se deduce de lo que sigue. Lo frágil es el coeficiente de los recursos de estudio en ese perfil. Con los 12 países, ese coeficiente sube unos 14 puntos de 2012 a 2022 (de 3,4 a 17,6), y por esa subida el
   coeficiente de los recursos difiere entre perfiles en 2022. Aguanta todas las comprobaciones (también por tramos y
   con otros controles) menos una: sin Australia, la subida baja a 6,8 puntos (p = 0,316) y el coeficiente de los
   recursos deja de diferir entre perfiles. Al quitar cualquiera de los otros 11 países la subida se mantiene (de
@@ -47,13 +60,6 @@
 ## Lo que no cambia entre perfiles
 - **El compromiso se asocia a la nota igual en todos los perfiles de centro**, y su cambio de 2012 a 2022 también
   es igual en todos. Ningún país quitado cambia esta conclusión con los 12 países.
-
-## Lo que no se comprobó
-- **Las diferencias de nota entre perfiles** (cuánto más o menos saca cada perfil que el público urbano mediano con
-  lo demás igual) no se repitieron quitando países ni con las otras variantes. No hay cifras para decir si dependen
-  de algún país: ni frágiles ni firmes, sin comprobar.
-- **No hay resultados por país.** Todas las cifras del modelo juntan los 12 países (cada alumno se compara con los
-  de su país).
 
 ## Cómo usar esta nota
 - Si el usuario pregunta si un resultado es fiable, contestar con lo que aguanta y lo que no, en lenguaje sencillo.
