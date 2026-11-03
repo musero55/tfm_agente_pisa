@@ -15,7 +15,7 @@ cuestionario de centro (`leer_recursos_centros` de `pisa_pipeline.py`, guardado 
       las ediciones juntas, con cada país-edición pesando igual.
     * `construir_indices`: índices de dotación (componente principal y pesos iguales) y de escasez.
 
-Lo usa `01_EDA_recursos_centro.ipynb`.
+Lo usan `01_EDA_recursos_centro.ipynb` y `tabla_alumno.py` (dotación y escasez del centro de cada alumno).
 """
 
 from __future__ import annotations

@@ -23,10 +23,9 @@ import pandas as pd
 import pyarrow.parquet as pq
 from girth import INVALID_RESPONSE, rasch_mml
 
-from src.pisa_pipeline import rutas_datos_anuales
+from src.pisa_pipeline import CLAVES_ALUMNO, rutas_datos_anuales
 
 EDICIONES_RECURSOS = [2012, 2015, 2018, 2022]
-CLAVES_ALUMNO = ['CNT', 'CNTSCHID', 'CNTSTUID']
 PESOS_ALUMNO = ['W_FSTUWT', 'SENWT']
 
 # Tipos de respuesta. Sí/no: 1 = sí, 2 = no. Cuántos (coches, baños): 1 = ninguno, 2 = uno, 3 = dos,
@@ -58,7 +57,7 @@ ITEMS_HOGAR = {
 SUBINDICES = {
     'recursos_estudio': ['habitacion_propia', 'ordenador_estudios', 'internet', 'libros_ayuda_estudios', 'libros_tecnicos', 'diccionario'],
     'riqueza_hogar': ['coches', 'baños'],
-    'libros': ['libros_en_casa'],
+    'cantidad_libros': ['libros_en_casa'],
 }
 # Ítems respondidos que hacen falta para calcular un subíndice (los demás subíndices necesitan todos): con
 # menos ítems que el total, la suma se estima como la media de los respondidos por el número de ítems.
@@ -113,6 +112,7 @@ def alfa_cronbach(datos: pd.DataFrame, items: list[str], peso_col: str | None = 
     pesos = completos[peso_col].to_numpy() if peso_col else np.ones(len(completos))
 
     def varianza(valores):
+        """Varianza de `valores` ponderada con los pesos de los alumnos completos."""
         media = np.average(valores, weights=pesos)
         return np.average((valores - media) ** 2, weights=pesos)
 

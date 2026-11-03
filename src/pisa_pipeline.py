@@ -89,6 +89,9 @@ COLUMNAS_BASICAS = ['CNT', 'CNTSCHID', 'STRATUM', 'W_FSTUWT']
 # Id de alumno: sirve para unir con ficheros externos (`escs_trend`).
 COLUMNAS_ID_ALUMNO = ['CNTSTUID']
 
+# Claves que identifican a un alumno dentro de una edición: país, centro y alumno
+CLAVES_ALUMNO = ['CNT', 'CNTSCHID', 'CNTSTUID']
+
 # Peso del centro (en 2012 el fichero lo llama W_FSCHWT; ver alias).
 COLUMNAS_PESO_COLEGIO = ['W_SCHGRNRABWT']
 
@@ -110,7 +113,7 @@ INDICES_TREND = {
     'HOMEPOS': 'homepos_trend', 'PAREDINT': 'paredint_trend',
 }
 
-COLUMNAS_TREND = [f'{c}_TREND' for c in INDICES_TREND]
+COLUMNAS_TREND = [f'{indice}_TREND' for indice in INDICES_TREND]
 
 CICLO_ESCS_TREND = {2012: 5, 2015: 6, 2018: 7}          # ciclo de cada edición en el csv
 
@@ -386,6 +389,7 @@ def añadir_indices_trend(datos: pd.DataFrame, año: int, ruta_csv: str) -> pd.D
     modulo = _MODULO_IDS_ESCS_TREND[año]
 
     def clave(serie):
+        """Id numérico para unir con el csv; en 2015 y 2018, sin el prefijo de país."""
         valores = pd.to_numeric(serie, errors='coerce').astype('Int64')
         return valores % modulo if modulo else valores
 
@@ -683,12 +687,14 @@ _COLUMNAS_DERIVADAS_COLEGIO = ['factor_inflacion', 'EDICION']
 
 
 def _columnas_vista_estudiantes(nombres) -> list[str]:
+    """Columnas de la vista de estudiantes (ids, pesos, valores plausibles y contexto) que existen en `nombres`."""
     columnas_valores_plausibles = [columna for columna in sum((columnas_pv(dominio) for dominio in DOMINIOS), []) if columna in nombres]
     base = COLUMNAS_BASICAS + COLUMNAS_ID_ALUMNO + _COLUMNAS_DERIVADAS_ESTUDIANTE + columnas_valores_plausibles + COLUMNAS_CONTEXTO_ESTUDIANTE
     return [columna for columna in dict.fromkeys(base) if columna in nombres]
 
 
 def _columnas_vista_colegios(nombres) -> list[str]:
+    """Columnas de la vista de centros (ids, pesos y contexto) que existen en `nombres`."""
     base = (['CNT', 'STRATUM', 'CNTSCHID'] + COLUMNAS_PESO_COLEGIO
             + [f'{columna}_adj' for columna in COLUMNAS_PESO_COLEGIO]
             + _COLUMNAS_DERIVADAS_COLEGIO + COLUMNAS_CONTEXTO_COLEGIO)

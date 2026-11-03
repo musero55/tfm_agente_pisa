@@ -30,10 +30,9 @@ import os
 
 import pandas as pd
 
-from src.pisa_pipeline import DOMINIOS, columnas_pv, rutas_datos_anuales
+from src.pisa_pipeline import CLAVES_ALUMNO, DOMINIOS, columnas_pv, rutas_datos_anuales
 from src.recursos_centro import construir_indices, leer_centros
 
-CLAVES_ALUMNO = ['CNT', 'CNTSCHID', 'CNTSTUID']
 COLUMNA_SEXO = {2012: 'ST04Q01', 2015: 'ST004D01T', 2018: 'ST004D01T', 2022: 'ST004D01T'}   # 1 = femenino, 2 = masculino
 VALORES_PLAUSIBLES = {2012: 5, 2015: 10, 2018: 10, 2022: 10}   # todos los de cada edición; cada una se combina con los suyos
 
@@ -58,7 +57,7 @@ PANELES = {'común': ('compromiso_competencia', [2012, 2015, 2018, 2022]),
 VARIABLES_MODELO = {
     'compromiso': ['Indice_Compromiso_Competencia'],
     'recursos del alumno': ['recursos_estudio'],
-    'control: origen social': ['HISEI_TREND', 'PAREDINT_TREND', 'riqueza_hogar', 'libros'],
+    'control: origen social': ['HISEI_TREND', 'PAREDINT_TREND', 'riqueza_hogar', 'cantidad_libros'],
     'control: alumno': ['sexo_femenino', 'inmigrante'],
     'control: centro': ['composicion_social_centro', 'dotacion_centro'],
     'comprobación': ['deberes_en_u', 'SKIPPING', 'TARDYSD', 'escs_centro', 'escasez_centro'],
@@ -142,7 +141,7 @@ def tabla_por_alumno(ruta_raw_base: str, ruta_intermedios: str, panel: str = 'co
                                           columns=CLAVES_ALUMNO + ['PERFIL_CODE']).rename(columns={'PERFIL_CODE': 'perfil'}).assign(year=edicion)
                           for edicion in ediciones], ignore_index=True)
     recursos_alumno = pd.read_parquet(os.path.join(ruta_intermedios, 'recursos_alumno_anual', 'pisa_recursos_alumno_anual.parquet'),
-                                      columns=CLAVES_ALUMNO + ['year', 'recursos_estudio', 'riqueza_hogar', 'libros'])
+                                      columns=CLAVES_ALUMNO + ['year', 'recursos_estudio', 'riqueza_hogar', 'cantidad_libros'])
     escs_centro = pd.read_parquet(os.path.join(ruta_intermedios, 'escs_anual', 'pisa_escs_centro_anual.parquet'))
     for tabla in (perfiles, recursos_alumno):
         tabla[CLAVES_ALUMNO] = tabla[CLAVES_ALUMNO].astype(str)

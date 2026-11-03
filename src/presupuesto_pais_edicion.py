@@ -157,6 +157,7 @@ def centros_pisa(ruta_raw_base: str, año: int) -> pd.DataFrame:
                       'pisa_brecha_escasez_material': 'escasez_material_educativo', 'pisa_brecha_escasez_personal': 'escasez_personal'}
 
     def media_por_pais(centros, origenes):
+        """Media por país, ponderada con el peso del centro, de las columnas de `origenes` ({nombre nuevo: columna}) que existan."""
         disponibles = {nuevo: origen for nuevo, origen in origenes.items() if origen in centros.columns}
         valores = centros[['CNT', 'W_SCHGRNRABWT']].assign(**{nuevo: centros[origen] for nuevo, origen in disponibles.items()})
         return agregar_media_ponderada(valores, list(disponibles), peso_col='W_SCHGRNRABWT').set_index('CNT')
@@ -282,6 +283,7 @@ def variables_externas(datos: dict, año: int) -> pd.DataFrame:
 
     # --- Cómo: reparto por nivel y tipo de enseñanza (gasto por alumno, relativo a secundaria)
     def por_alumno(nivel):
+        """Gasto por alumno del nivel educativo `nivel` (código ISCED) en el año de la edición."""
         return valor_en_año(serie(gasto_por_alumno, nivel=nivel, **base), año)
     variables['gasto_alumno_preprimaria_usd_ppp'] = por_alumno('ISCED11_02').where(lambda valores: valores != 0)   # 0 = dato no disponible
     variables['ratio_gasto_preprimaria_sobre_secundaria'] = variables['gasto_alumno_preprimaria_usd_ppp'] / variables['gasto_alumno_secundaria_usd_ppp']
@@ -416,7 +418,7 @@ def residuo_ols(datos: pd.DataFrame, variable_objetivo: str, variables_explicati
 # o 'PISA' (tablas maestras: el cálculo indica la variable original).
 DESCRIPCION_NIVEL_GASTO = {'1': 'primaria', '2': 'secundaria 1.ª etapa', '3': 'secundaria 2.ª etapa', '2_3': 'secundaria 1.ª+2.ª etapa'}
 ORIGEN_VARIABLES = {
-    **{f'gasto_alumno_{NOMBRE_NIVEL_GASTO[n]}_usd_ppp': (('gasto_por_alumno',), f'USD PPP constantes por alumno, {d}') for n, d in DESCRIPCION_NIVEL_GASTO.items()},
+    **{f'gasto_alumno_{NOMBRE_NIVEL_GASTO[nivel]}_usd_ppp': (('gasto_por_alumno',), f'USD PPP constantes por alumno, {descripcion}') for nivel, descripcion in DESCRIPCION_NIVEL_GASTO.items()},
     'gasto_alumno_secundaria_media_4_años_usd_ppp': (('gasto_por_alumno',), 'Media de los 4 años hasta la edición (interpolación interior; mín. 3 años)'),
     'gasto_acumulado_alumno_6_a_15_años_usd_ppp': (('gasto_por_alumno',), 'Primaria t-9 a t-4 + secundaria 1.ª etapa t-3 a t (interpolación interior)'),
     'gasto_alumno_secundaria_pct_pib_per_capita': (('gasto_por_alumno',), 'Mismo gasto como % del PIB per cápita (`PT_B1GQ_POP`)'),
@@ -495,13 +497,14 @@ ORIGEN_VARIABLES = {
     'pisa_autonomia_recursos': (('PISA',), '`RESPRES` (2012, 2015) / `SRESPRES` (2022); no en 2018; no comparable'),
     'pisa_escasez_material_educativo': (('PISA',), '`EDUSHORT`, media de centros (desde 2015)'),
     'pisa_escasez_personal': (('PISA',), '`STAFFSHORT`, media de centros (desde 2015)'),
-    **{f'pisa_brecha_{n}': (('PISA',), f'Media del cuartil de centros más desfavorecido menos la del más favorecido ({v})')
-       for n, v in (('alumnos_por_profesor', '`STRATIO`'), ('tamaño_clase', '`CLSIZE`'), ('profesorado_certificado', 'profesorado certificado'),
+    **{f'pisa_brecha_{recurso}': (('PISA',), f'Media del cuartil de centros más desfavorecido menos la del más favorecido ({origen})')
+       for recurso, origen in (('alumnos_por_profesor', '`STRATIO`'), ('tamaño_clase', '`CLSIZE`'), ('profesorado_certificado', 'profesorado certificado'),
                     ('escasez_material', '`EDUSHORT`'), ('escasez_personal', '`STAFFSHORT`'))},
 }
 
 
 def _proveedor(series: tuple) -> str:
+    """Proveedor de los datos según sus `series` de origen."""
     if series == ('PISA',):
         return 'PISA (tablas maestras)'
     if series[0] == 'gini_ocde':
