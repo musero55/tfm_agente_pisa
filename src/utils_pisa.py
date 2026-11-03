@@ -1,6 +1,4 @@
-import pandas as pd
 import numpy as np
-import re
 from typing import Any
 import pickle
 import os
@@ -76,9 +74,6 @@ def puntuaciones_pisa_estratos(df, competencia,col_peso='W_FSTUWT'):
         
     # Calcular la media de los PVs para cada alumno directamente
     media_alumno = df[cols_pv].mean(axis=1)
-    
-    # Calcular la nota ponderada de cada alumno
-    nota_ponderada = media_alumno * df[col_peso]
     
     # Agrupar por país y estrato y calculamos la media 
     # Agrupamos el DataFrame original usando series calculadas externamente

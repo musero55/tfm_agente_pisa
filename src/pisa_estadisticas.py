@@ -5,7 +5,8 @@ pisa_estadisticas.py
 Estadísticas sobre las tablas maestras de PISA (`data/raw/datos_anuales/`, ver `pisa_pipeline.py`):
 
     * `porcentaje_nulos` / `porcentaje_nulos_por_pais`: nulos por columna y por país.
-    * `media_ponderada`: media ponderada de una serie, sin contar los vacíos.
+    * `media_ponderada` / `desviacion_ponderada`: media y desviación típica ponderadas de una serie, sin contar
+      los vacíos.
     * `agregar_media_ponderada` / `agregar_desviacion_ponderada` / `agregar_pv`: medias y desviaciones
       típicas ponderadas por país, estrato o centro (ver `CLAVES_NIVEL`); `agregar_pv` da la nota media
       de un dominio.
@@ -48,6 +49,16 @@ def media_ponderada(valores: pd.Series, pesos: pd.Series) -> float:
     """Media de `valores` ponderada con `pesos`, sin contar los vacíos (vacía si no hay ningún valor)."""
     con_dato = valores.notna()
     return np.average(valores[con_dato], weights=pesos[con_dato]) if con_dato.any() else np.nan
+
+
+def desviacion_ponderada(valores, pesos) -> float:
+    """Desviación típica de `valores` ponderada con `pesos` (series o vectores), sin contar los vacíos: la raíz de la
+    media ponderada de los cuadrados de las desviaciones respecto a la media ponderada."""
+    valores = valores if isinstance(valores, pd.Series) else pd.Series(valores)
+    con_dato = valores.notna().to_numpy()
+    valores, pesos = valores[con_dato], np.asarray(pesos)[con_dato]
+    media = np.average(valores, weights=pesos)
+    return np.sqrt(np.average((valores - media) ** 2, weights=pesos))
 
 
 # Claves de agrupación de cada nivel. En 2012 `CNTSCHID` se repite entre países: el centro
