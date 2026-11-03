@@ -127,6 +127,7 @@ GINI_BANCO_MUNDIAL = 'SI.POV.GINI'        # Gini (0-100) de encuestas de hogares
 
 
 def _get(url: str, timeout: int = 300) -> bytes:
+    """Contenido de `url` descargado con un `User-Agent` de navegador (algunas API rechazan el de Python)."""
     peticion = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
     with urllib.request.urlopen(peticion, timeout=timeout) as respuesta:
         return respuesta.read()
@@ -320,6 +321,7 @@ def enlaces_fuentes() -> pd.DataFrame:
 
 
 def _estado_api(url: str, formato: str) -> str:
+    """Si la consulta `url` responde, con cuántas filas (`formato`: 'csv', 'wb' del Banco Mundial o JSON de Eurostat), o el error."""
     try:
         datos = _get(url, 120)
         if formato == 'csv':
@@ -351,6 +353,7 @@ def comprobar_fuentes(api: bool = True) -> pd.DataFrame:
             print(f'No se pudo leer el catálogo de la OCDE ({agencia}): {error}')
 
     def portal_ok(enlace):
+        """Si el portal de `enlace` responde; en la OCDE, si su versión del conjunto de datos sigue siendo la actual."""
         if enlace['proveedor'] == 'OCDE':
             catalogo = catalogos.get(enlace['agencia'])
             if catalogo is None:

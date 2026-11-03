@@ -37,7 +37,7 @@ def obtener_paleta(n_categorias: int) -> list[str]:
         return px.colors.qualitative.Alphabet
     else:
         return px.colors.sample_colorscale(
-            "turbo", [i / (n_categorias - 1) for i in range(n_categorias)]
+            "turbo", [posicion / (n_categorias - 1) for posicion in range(n_categorias)]
         )
 
 
@@ -173,5 +173,5 @@ def plot_comparar_paises_todas_materias(
         title=f"Comparativa entre países por materia ({metrica})",
     )
     fig.update_layout(legend_title="País", hovermode="x unified")
-    fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1].replace("_", " ").capitalize()))
+    fig.for_each_annotation(lambda anotacion: anotacion.update(text=anotacion.text.split("=")[-1].replace("_", " ").capitalize()))
     return fig

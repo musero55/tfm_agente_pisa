@@ -63,6 +63,7 @@ def marcar_universo(datos: pd.DataFrame, minimo_centros: int = MINIMO_CENTROS) -
 
 
 def _media_y_desviacion(valores: pd.Series, pesos: pd.Series) -> tuple[float, float]:
+    """Media y desviación típica de `valores` ponderadas con `pesos`, sin contar los vacíos."""
     con_dato = valores.notna()
     media = np.average(valores[con_dato], weights=pesos[con_dato])
     return media, np.sqrt(np.average((valores[con_dato] - media) ** 2, weights=pesos[con_dato]))
@@ -131,7 +132,7 @@ DESCRIPCION_COLUMNAS = {
     'HISEI_TREND': ('control: origen social', 'Ocupación más alta de los padres, índice ISEI reescalado por la OCDE para comparar ediciones (de 11 a 89; más = ocupación de más estatus)'),
     'PAREDINT_TREND': ('control: origen social', 'Años de estudios del padre o la madre con más estudios, reescalado por la OCDE (de 3 a 16)'),
     'riqueza_hogar': ('control: origen social', 'Riqueza del hogar: coches (0 a 3) más baños (0 a 3), de 0 a 6'),
-    'libros': ('control: origen social', 'Libros en casa por tramos: 1 = de 0 a 10, 2 = de 11 a 25, 3 = de 26 a 100, 4 = de 101 a 200, 5 = de 201 a 500, 6 = más de 500'),
+    'cantidad_libros': ('control: origen social', 'Libros en casa por tramos: 1 = de 0 a 10, 2 = de 11 a 25, 3 = de 26 a 100, 4 = de 101 a 200, 5 = de 201 a 500, 6 = más de 500'),
     'sexo_femenino': ('control: alumno', '1 = chica, 0 = chico'),
     'inmigrante': ('control: alumno', '1 = inmigrante de primera o segunda generación, 0 = nativo'),
     'composicion_social_centro': ('control: centro', 'Composición social del centro: media en el centro del origen social de sus alumnos (ocupación y estudios de los padres tipificados), en desviaciones típicas de alumno'),

@@ -5,6 +5,7 @@ pisa_estadisticas.py
 Estadísticas sobre las tablas maestras de PISA (`data/raw/datos_anuales/`, ver `pisa_pipeline.py`):
 
     * `porcentaje_nulos` / `porcentaje_nulos_por_pais`: nulos por columna y por país.
+    * `media_ponderada`: media ponderada de una serie, sin contar los vacíos.
     * `agregar_media_ponderada` / `agregar_desviacion_ponderada` / `agregar_pv`: medias y desviaciones
       típicas ponderadas por país, estrato o centro (ver `CLAVES_NIVEL`); `agregar_pv` da la nota media
       de un dominio.
@@ -42,6 +43,12 @@ def porcentaje_nulos_por_pais(datos: pd.DataFrame, columna: str, pais_col: str =
 
 
 # 2. Medias y desviaciones ponderadas por país, estrato o centro
+
+def media_ponderada(valores: pd.Series, pesos: pd.Series) -> float:
+    """Media de `valores` ponderada con `pesos`, sin contar los vacíos (vacía si no hay ningún valor)."""
+    con_dato = valores.notna()
+    return np.average(valores[con_dato], weights=pesos[con_dato]) if con_dato.any() else np.nan
+
 
 # Claves de agrupación de cada nivel. En 2012 `CNTSCHID` se repite entre países: el centro
 # se identifica siempre con `CNT` + `CNTSCHID`. Por alumno no se agrega: cada alumno es una
