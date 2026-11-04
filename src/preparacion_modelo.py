@@ -15,6 +15,7 @@ mantienen separados:
       `sin_<variable>`. Las variables de interés no se imputan: los alumnos sin ellas no entran.
     * `matriz_xgboost`: las mismas variables en sus unidades originales y con sus huecos, que XGBoost trata solo.
     * `DESCRIPCION_COLUMNAS` / `diccionario_columnas`: qué es cada columna de la tabla guardada y en qué unidades.
+    * `orden_perfiles`: los perfiles en el orden de las tablas y figuras (titularidad, ubicación y tamaño).
 
 Los perfiles de centro son los de `00_Pipeline_generacion_estratos`; el umbral de centros (`MINIMO_CENTROS`) se
 aplica y se describe en `02_preparacion_modelo`.
@@ -22,9 +23,9 @@ aplica y se describe en `02_preparacion_modelo`.
 
 from __future__ import annotations
 
-import numpy as np
 import pandas as pd
 
+from src.pisa_estadisticas import desviacion_ponderada, media_ponderada
 from src.pisa_pipeline import DOMINIOS
 from src.tabla_alumno import VARIABLES_MODELO
 
@@ -38,6 +39,13 @@ SIN_TIPIFICAR = ['sexo_femenino', 'inmigrante', 'deberes_en_u', 'SKIPPING', 'TAR
 TIPIFICAR_POR_EDICION = ['escasez_centro']
 MARCAS = ['perfil_excluido', 'perfil_poco_representativo', 'con_variables_interes', 'en_modelo']
 IDENTIFICADORES = ['CNT', 'CNTSCHID', 'CNTSTUID', 'year', 'pais_edicion', 'centro', 'perfil', 'W_FSTUWT', 'SENWT']
+
+
+def orden_perfiles(perfiles) -> list[str]:
+    """`perfiles` ordenados por titularidad (público, concertado, privado), ubicación (rural, urbano) y tamaño
+    (grande, mediano, pequeño)."""
+    return sorted(perfiles, key=lambda perfil: (['PUB', 'CON', 'PRI'].index(perfil.split('_')[0]), perfil.split('_')[1],
+                                                ['MACRO', 'MED', 'PEQ'].index(perfil.split('_')[2])))
 
 
 def centros_por_perfil(datos: pd.DataFrame) -> pd.DataFrame:
@@ -64,9 +72,7 @@ def marcar_universo(datos: pd.DataFrame, minimo_centros: int = MINIMO_CENTROS) -
 
 def _media_y_desviacion(valores: pd.Series, pesos: pd.Series) -> tuple[float, float]:
     """Media y desviación típica de `valores` ponderadas con `pesos`, sin contar los vacíos."""
-    con_dato = valores.notna()
-    media = np.average(valores[con_dato], weights=pesos[con_dato])
-    return media, np.sqrt(np.average((valores[con_dato] - media) ** 2, weights=pesos[con_dato]))
+    return media_ponderada(valores, pesos), desviacion_ponderada(valores, pesos)
 
 
 def parametros_escala(datos: pd.DataFrame, peso_col: str = 'SENWT') -> pd.DataFrame:
