@@ -525,6 +525,7 @@ def get_regression_weights(variable: str = "", year: Union[int, str] = 2022, tip
                            desde: Optional[float] = None) -> str:
     """
     Linear regression of the math score, one per edition: coefficients with interval and p.
+    No country filter: one model for the 12 countries together.
     - To compare variables ("which matters more?") call with NO variable: all ranked by 'por_desv_tipica'.
     - variable: compromiso (also faltar, llegar tarde, deberes: adds 'conductas', use it for one behaviour), recursos,
       ocupacion, estudios padres, riqueza, libros, composicion social, dotacion, sexo, inmigrante. With
