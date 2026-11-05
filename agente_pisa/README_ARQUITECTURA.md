@@ -27,7 +27,7 @@ agente_pisa/
 ├── metodologia/              Notas de metodología, una por tema (ver sección 5)
 ├── requirements.txt          Dependencias mínimas para Streamlit Cloud
 ├── agente_pisa.ipynb         Banco de pruebas manuales y Gradio
-├── evaluador/                Juez LLM y batería de casos de referencia (casos por escribir)
+├── evaluador/                Juez LLM, 16 casos de referencia y notebook de evaluación (evaluator.ipynb)
 ├── artefactos/               Datos que consume la app (se suben a git)
 │   ├── alumnos_modelo.parquet       Alumnos en_modelo (298.782), legibles, con la nota de matemáticas
 │   ├── coeficientes_regresion.csv   Regresión por edición, traducida al formato del agente (sección 9)
