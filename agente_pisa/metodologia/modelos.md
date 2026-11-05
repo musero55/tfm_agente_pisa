@@ -110,7 +110,7 @@ Hay dos versiones:
 ## Qué añade el XGBoost
 - **Apenas predice mejor:** el R² sube solo entre 0,02 y 0,03 sobre la regresión. La relación es casi lineal y la
   regresión recoge casi todo lo que estas variables dicen de la nota.
-- **Los recursos tienen efecto techo:** de 3 a 4 recursos se ganan unos 5 a 8 puntos; de 5 a 6, solo 2 o 3. La recta
+- **Los recursos tienen efecto techo:** de 3 a 4 recursos se ganan unos 5 a 10 puntos; de 5 a 6, solo entre 1 y 3. La recta
   de la regresión exagera algo el último recurso.
 - **El índice de compromiso no se comporta como una escala ordenada:** faltar a clase pesa mucho más que los
   deberes, aunque el índice les da el mismo peso (ver la nota de compromiso).

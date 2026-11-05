@@ -70,6 +70,9 @@ más alto indica más compromiso.
 - Por eso la bajada de la media del índice desde 2015 se debe sobre todo a cómo se pregunta por los deberes, no a
   un cambio real de comportamiento. La evolución en el tiempo debe leerse sobre todo a través de la asistencia. La
   relación con la nota dentro de cada edición no se ve afectada.
+- La bajada de 2012 a 2015, en cambio, sí refleja en parte un cambio de conducta. Entre los alumnos del modelo,
+  los que faltaron a clase en las dos últimas semanas pasan del 27,5 % al 36,2 %, y los que llegaron tarde alguna
+  vez, del 34,1 % al 41,1 %.
 - El tipo de centro explica muy poco del índice (menos del 1 % de su variación en 2022): el compromiso es sobre
   todo una característica individual del alumno.
 

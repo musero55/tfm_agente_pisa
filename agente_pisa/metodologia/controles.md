@@ -56,8 +56,8 @@ esas diferencias se atribuiría por error a las variables de interés. Hay ocho 
   alumnos sea mayor en lectura que en matemáticas, pero no se ha comprobado por separado.
 
 ## Cómo leer la dotación del centro
-- Una vez tenidos en cuenta los alumnos y el tipo de centro, la dotación apenas se asocia con la nota (entre −1,6 y
-  −2,5 puntos por desviación típica).
+- Una vez tenidos en cuenta los alumnos y el tipo de centro, la dotación apenas se asocia con la nota (entre −2,5 y
+  −3,7 puntos por desviación típica).
 - Que sea algo negativa no significa que los recursos perjudiquen. Hay compensación: los centros con alumnos menos
   favorecidos suelen tener menos alumnos por profesor y clases más pequeñas, porque reciben más recursos al tener
   más necesidades.
