@@ -50,9 +50,9 @@ Una regresión y un XGBoost por edición, estimados con cada valor plausible. El
 ## Etapa 3: cierre
 
 - [ ] Imágenes, al redactar la memoria: actualizar las listas de `preparar_artefactos.py` (el agente elige la imagen leyendo la descripción). Incluye:
-  - [x] Gráficos de modelado: los 13 PNG `03_*.png` están en la lista `GRAFICOS_MODELADO` (catálogo de 35 gráficos con los de recursos del alumno). `get_context_chart` puntúa ahora todas las palabras de la búsqueda y solo lista los 5 gráficos más relacionados (de ~4.300 a ~1.000 caracteres por respuesta). El System Prompt le prohíbe inventar ejes o valores de una imagen que no ve.
+  - [x] Gráficos de modelado: los 11 PNG `03_*.png` están en la lista `GRAFICOS_MODELADO` (catálogo de 33 gráficos con los de recursos del alumno). `get_context_chart` puntúa ahora todas las palabras de la búsqueda y solo lista los 5 gráficos más relacionados (de ~4.300 a ~1.000 caracteres por respuesta). El System Prompt le prohíbe inventar ejes o valores de una imagen que no ve.
   - Si cambian los PNG de `reports/` al redactar la memoria, revisar que las descripciones sigan siendo ciertas.
-  - [x] `GRAFICOS_RECURSOS_ALUMNO`: los 4 gráficos de cómo se forma el índice de recursos ya se copian (catálogo de 35). Están calculados con 33 países de la OCDE (`01_EDA_recursos_alumno`, celda 2), así que su descripción lo dice.
+  - [x] `GRAFICOS_RECURSOS_ALUMNO`: los 4 gráficos de cómo se forma el índice de recursos ya se copian (catálogo de 33). Están calculados con 33 países de la OCDE (`01_EDA_recursos_alumno`, celda 2), así que su descripción lo dice.
 - [ ] Marco teórico: escribirlo como nota `metodologia/marco_teorico.md` cuando el informe esté cerrado. El System Prompt ya no tiene el bloque reservado (se quitó en `e8855de`), y así no gasta tokens en cada llamada.
 - [ ] Evaluador: 16 casos en `evaluador/reference_test.py` (perfiles y Australia, y conclusiones de la memoria) y notebook `evaluador/evaluator.ipynb`, que ejecuta la batería, la guarda en `evaluador/resultados/` y compara ejecuciones. Falta lanzar la batería completa y revisar los fallos.
 - [x] `README_ARQUITECTURA.md` actualizado: etapas, qué hace cada herramienta y cuándo se llama, temas de metodología, tokens y la traducción de la entrega (sección 9, que sustituye a `ADAPTACION_MODELOS.md`).

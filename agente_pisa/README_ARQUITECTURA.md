@@ -34,7 +34,7 @@ agente_pisa/
 │   ├── shap_alumnos.parquet         SHAP del XGBoost de cada alumno, medio entre valores plausibles
 │   ├── metricas_modelos.csv         R², RMSE y MAE de la regresión y del XGBoost por edición
 │   ├── conductas_compromiso.csv     Coeficiente de cada conducta del compromiso (2012 y 2022), de data/processed/resultados_robustez.parquet
-│   ├── catalogo_graficos.csv        Los 35 gráficos que el agente y la galería pueden mostrar, con su descripción
+│   ├── catalogo_graficos.csv        Los 33 gráficos que el agente y la galería pueden mostrar, con su descripción
 │   └── img/                         PNG copiados de reports/ (análisis exploratorio y modelado)
 ├── README_ARQUITECTURA.md    Este documento
 └── REQUISITOS_PENDIENTES.md  Checklist de lo que falta

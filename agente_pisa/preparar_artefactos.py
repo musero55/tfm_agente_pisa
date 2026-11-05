@@ -179,14 +179,6 @@ GRAFICOS_MODELADO = [
      "común de 12 países y en el ampliado de 25"),
     ("robustez_techo_recursos", "03_robustez_techo_recursos.png",
      "Robustez: porcentaje de alumnos con los seis recursos de estudio (efecto techo) por perfil de centro y edición"),
-    # 03_australia_privados_grandes: el privado urbano grande depende de Australia
-    ("australia_coeficiente_recursos", "03_australia_pendientes.png",
-     "Australia: coeficiente de los recursos de estudio en sus privados urbanos grandes, en toda Australia y en los "
-     "otros 11 países, por edición (puntos por desviación típica). El salto de 2022 del privado urbano grande viene de "
-     "Australia: no es un rasgo general de estos centros (nota de perfiles de centro)"),
-    ("australia_nota_por_tramo", "03_australia_nota_por_tramo.png",
-     "Australia: nota media de matemáticas según los recursos de estudio (los seis, falta uno, faltan dos o más) en sus "
-     "privados urbanos grandes y en el resto del país, por edición (medias sin controles)"),
     # 03_errores_brr: validación de los errores típicos
     ("errores_brr_comparacion", "03_errores_brr_comparacion.png",
      "Errores típicos de los coeficientes por perfil: agrupados por centro frente a pesos replicados de PISA (BRR); "
