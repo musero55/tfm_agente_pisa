@@ -8,7 +8,8 @@ Regresión por edición de la nota sobre las variables de interés, con efecto f
     * `matriz_diseno`: columnas de la regresión de una edición. Constante, un indicador por país (efecto fijo) y
       por perfil (salvo `PERFIL_REFERENCIA`), los controles con sus indicadores de «sin dato» y las variables de
       interés: una pendiente común (`por_perfil=False`) o una por perfil (`por_perfil=True`, la variable
-      multiplicada por el indicador de cada perfil, así que cada coeficiente es la pendiente de ese perfil).
+      multiplicada por el indicador de cada perfil, así que cada coeficiente es la pendiente de ese perfil). Con
+      `columna_pendiente='CNT'` la pendiente es por país (`03_robustez_regresion`, sección 10).
     * `mco_ponderado`: mínimos cuadrados ponderados con errores típicos agrupados por centro.
     * `pesos_replicados` / `mco_brr`: los 80 pesos replicados de PISA y la regresión con errores típicos de
       muestreo calculados con ellos (BRR con el ajuste de Fay), el método oficial de PISA.
@@ -44,10 +45,12 @@ FACTOR_FAY = 0.5   # ajuste de Fay de PISA: cada réplica multiplica el peso de 
 
 
 def matriz_diseno(datos: pd.DataFrame, por_perfil: bool, controles: list[str] = CONTROLES,
-                  de_interes: list[str] = DE_INTERES) -> pd.DataFrame:
-    """Columnas de la regresión para las filas de `datos` (una edición de `matriz_regresion`). Las pendientes por
-    perfil se llaman `<variable>:<perfil>`. Se quitan las columnas sin variación (por ejemplo, un indicador de
-    «sin dato» de una variable que no tiene huecos en esa edición) salvo la constante."""
+                  de_interes: list[str] = DE_INTERES, columna_pendiente: str = 'perfil') -> pd.DataFrame:
+    """Columnas de la regresión para las filas de `datos` (una edición de `matriz_regresion`). Con `por_perfil`, cada
+    variable de interés tiene una pendiente por valor de `columna_pendiente` (por defecto el perfil; con `'CNT'`, una
+    por país), llamada `<variable>:<valor>`. Los niveles de país y de perfil son los mismos en los dos casos. Se quitan
+    las columnas sin variación (por ejemplo, un indicador de «sin dato» de una variable que no tiene huecos en esa
+    edición) salvo la constante."""
     diseno = pd.DataFrame({'constante': 1.0}, index=datos.index)
     # Efecto fijo de país: un indicador por país salvo el primero, que queda en la constante
     paises = pd.get_dummies(datos['CNT'], prefix='pais', dtype=float)
@@ -57,11 +60,12 @@ def matriz_diseno(datos: pd.DataFrame, por_perfil: bool, controles: list[str] = 
     for perfil in perfiles:
         if perfil != PERFIL_REFERENCIA:
             diseno[f'perfil_{perfil}'] = (datos['perfil'] == perfil).astype(float)
+    grupos = sorted(datos[columna_pendiente].unique())
     for variable in de_interes:
         if por_perfil:
-            # Una columna por perfil: la variable en los alumnos del perfil y 0 en los demás (también el de referencia)
-            for perfil in perfiles:
-                diseno[f'{variable}:{perfil}'] = datos[variable] * (datos['perfil'] == perfil)
+            # Una columna por grupo: la variable en los alumnos del grupo y 0 en los demás (también el de referencia)
+            for grupo in grupos:
+                diseno[f'{variable}:{grupo}'] = datos[variable] * (datos[columna_pendiente] == grupo)
         else:
             diseno[variable] = datos[variable]
     indicadores = [f'sin_{variable}' for variable in controles if f'sin_{variable}' in datos.columns]
@@ -168,7 +172,7 @@ def estimar_con_rubin(datos: pd.DataFrame, diseno: pd.DataFrame, dominio: str = 
 def estimar_por_edicion(matriz: pd.DataFrame, por_perfil: bool, dominio: str = 'MATH', replicas: pd.DataFrame | None = None,
                         **opciones_diseno) -> tuple[pd.DataFrame, dict[int, pd.DataFrame]]:
     """`estimar_con_rubin` en cada edición de `matriz` con la nota de `dominio`, con el diseño de `matriz_diseno`
-    (`opciones_diseno` pasa `controles` y `de_interes`) y, si se pasan, los pesos replicados de `pesos_replicados`
+    (`opciones_diseno` pasa `controles`, `de_interes` y `columna_pendiente`) y, si se pasan, los pesos replicados de `pesos_replicados`
     (mismo índice que `matriz`). Devuelve la tabla de todas las ediciones, con índice (`year`, `termino`), y la
     matriz de covarianzas de cada edición."""
     tablas, covarianzas = {}, {}

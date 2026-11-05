@@ -41,7 +41,7 @@ Los notebooks están en `notebooks/`, por fases. Este es el orden de ejecución,
 | 9 | `fase_2_feature_engineering/02_preparacion_modelo` | Tabla del modelo, en `data/processed/` |
 | 10 | `fase_3_modelado/03_regresion_por_edicion` | Modelo principal; guarda los coeficientes en `models/` |
 | 11 | `fase_3_modelado/03_errores_brr` | Errores típicos con los 80 pesos replicados de PISA (BRR) |
-| 12 | `fase_3_modelado/03_robustez_regresion` | Comprobaciones de robustez: medida del compromiso, efecto techo, controles, panel ampliado, quitar cada país y no respuesta |
+| 12 | `fase_3_modelado/03_robustez_regresion` | Comprobaciones de robustez: medida del compromiso, efecto techo, controles, panel ampliado, quitar cada país, no respuesta, pendiente por país y efecto fijo país × perfil |
 | 13 | `fase_3_modelado/03_australia_privados_grandes` | El salto de los recursos en los privados urbanos grandes de Australia |
 | 14 | `fase_3_modelado/03_xgboost_shap` | XGBoost con SHAP; guarda los SHAP y las métricas en `models/` |
 
