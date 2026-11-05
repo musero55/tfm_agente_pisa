@@ -36,7 +36,7 @@ import pandas as pd
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_groq import ChatGroq
 from pydantic import BaseModel, Field
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
+from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 DIR_ACTUAL = Path(__file__).resolve().parent
 if str(DIR_ACTUAL.parent) not in sys.path:
@@ -119,12 +119,25 @@ def _herramientas_ok(usadas: list[str], esperadas: list[str], minimo: int) -> bo
 PROMPT_JUEZ = RUTA_PROMPT_JUEZ.read_text(encoding="utf-8")
 
 
-@retry(retry=retry_if_exception_type(groq.RateLimitError), wait=wait_exponential(multiplier=2, min=5, max=30),
+MAX_TOKENS_JUEZ = 500   # el veredicto ocupa unos 150; en el plan gratuito, Qwen admite 1.000 tokens de salida por minuto
+
+
+def _reintentar_juez(error: BaseException) -> bool:
+    """Cuota de Groq o salida que no cumple el esquema (el modelo a veces se deja un campo): vale la pena repetir."""
+    if isinstance(error, groq.RateLimitError):
+        return True
+    return isinstance(error, groq.BadRequestError) and any(codigo in str(error) for codigo in ("json_validate_failed", "tool_use_failed"))
+
+
+@retry(retry=retry_if_exception(_reintentar_juez), wait=wait_exponential(multiplier=2, min=5, max=30),
        stop=stop_after_attempt(3), reraise=True)
 def _juzgar(prompt: str, modelo_juez: str, config: dict) -> VeredictoJuez:
-    """Veredicto del juez; ante un límite de cuota de Groq, espera y lo reintenta hasta tres veces."""
-    juez = ChatGroq(temperature=0.0, model=modelo_juez, max_retries=0).with_structured_output(VeredictoJuez)
-    return juez.invoke([HumanMessage(content=prompt)], config=config)
+    """Veredicto del juez con salida JSON validada por Groq contra `VeredictoJuez` (más fiable que la llamada a
+    herramienta, en la que Qwen a veces escribe mal el nombre o se deja un campo). En Qwen se desactiva el
+    razonamiento: gasta tokens de salida y rompe el JSON. Reintenta hasta tres veces (`_reintentar_juez`)."""
+    opciones = {"reasoning_effort": "none"} if modelo_juez.startswith("qwen/") else {}
+    juez = ChatGroq(temperature=0.0, model=modelo_juez, max_retries=0, max_tokens=MAX_TOKENS_JUEZ, **opciones)
+    return juez.with_structured_output(VeredictoJuez, method="json_schema").invoke([HumanMessage(content=prompt)], config=config)
 
 
 def _prompt_juez(caso: dict[str, Any], respuesta: str) -> str:
@@ -140,6 +153,28 @@ def _prompt_juez(caso: dict[str, Any], respuesta: str) -> str:
 # ==========================================================
 #  Evaluación de un caso y de la batería
 # ==========================================================
+ESPERA_CUOTA_SEG = 60   # si el agente se queda sin modelos por la cuota de Groq, se espera y se repite el caso una vez
+
+
+def _sin_cuota(error: Exception) -> bool:
+    """El agente no tuvo ningún modelo disponible por la cuota (`agente.invocar_con_respaldo`)."""
+    return isinstance(error, groq.RateLimitError) or isinstance(error.__cause__, groq.RateLimitError)
+
+
+def _preguntar_agente(agente, pregunta: str, config: dict) -> list:
+    """Mensajes de la respuesta del agente; si se queda sin cuota, espera `ESPERA_CUOTA_SEG` y lo intenta otra vez
+    en un hilo nuevo."""
+    try:
+        return agente.invoke({"messages": [("user", pregunta)]}, config=config)["messages"]
+    except Exception as error:
+        if not _sin_cuota(error):
+            raise
+        print(f"   Sin cuota en Groq: se espera {ESPERA_CUOTA_SEG} s y se repite el caso.")
+        time.sleep(ESPERA_CUOTA_SEG)
+        reintento = {**config, "configurable": {**config["configurable"], "thread_id": config["configurable"]["thread_id"] + "_r"}}
+        return agente.invoke({"messages": [("user", pregunta)]}, config=reintento)["messages"]
+
+
 def _evaluar_caso_estudio(agente, caso: dict[str, Any], modelo_juez: str, ejecucion: str) -> dict[str, Any]:
     """Pregunta el caso al agente en un hilo nuevo y lo evalúa. Si falla el agente, el caso queda como «ERROR»; si
     falla solo el juez, se conservan la respuesta y las comprobaciones automáticas."""
@@ -156,7 +191,7 @@ def _evaluar_caso_estudio(agente, caso: dict[str, Any], modelo_juez: str, ejecuc
     config_agente = {"configurable": {"thread_id": f"eval_{test_id}_{int(inicio)}"}, "recursion_limit": LIMITE_RECURSION,
                      "run_name": f"eval · {test_id}", "tags": ["evaluacion", ejecucion], "metadata": metadatos}
     try:
-        mensajes = agente.invoke({"messages": [("user", caso["pregunta"])]}, config=config_agente)["messages"]
+        mensajes = _preguntar_agente(agente, caso["pregunta"], config_agente)
     except Exception as error:
         return {**fila, "Tools OK": "ERROR", "Fidelidad OK": "ERROR", "Estilo Limpio": "ERROR", "Calidad (1-5)": None,
                 "Completitud (1-5)": None, "Tiempo (s)": round(time.time() - inicio, 2), "Modelo": "", "Respaldo": False,
@@ -241,7 +276,8 @@ def resumen_evaluacion(resultados: pd.DataFrame) -> pd.DataFrame:
         return pd.Series({
             "Casos": len(grupo),
             **{f"% {criterio}": round(100 * (grupo[criterio] == "OK").mean(), 1) for criterio in CRITERIOS},
-            **{f"Media {puntuacion}": round(grupo[puntuacion].mean(), 2) for puntuacion in PUNTUACIONES},
+            # En float: si todos los casos del grupo tienen error, la media es NaN y no un NA que no se redondea
+            **{f"Media {puntuacion}": round(grupo[puntuacion].astype(float).mean(), 2) for puntuacion in PUNTUACIONES},
             "Con respaldo": int(grupo["Respaldo"].astype(bool).sum()),
             "Con error": int(grupo[CRITERIOS].eq("ERROR").any(axis=1).sum()),
         })
