@@ -54,7 +54,7 @@ Una regresión y un XGBoost por edición, estimados con cada valor plausible. El
   - Si cambian los PNG de `reports/` al redactar la memoria, revisar que las descripciones sigan siendo ciertas.
   - [x] `GRAFICOS_RECURSOS_ALUMNO`: los 4 gráficos de cómo se forma el índice de recursos ya se copian (catálogo de 35). Están calculados con 33 países de la OCDE (`01_EDA_recursos_alumno`, celda 2), así que su descripción lo dice.
 - [ ] Marco teórico: escribirlo como nota `metodologia/marco_teorico.md` cuando el informe esté cerrado. El System Prompt ya no tiene el bloque reservado (se quitó en `e8855de`), y así no gasta tokens en cada llamada.
-- [ ] Evaluador: `evaluador/reference_test.py` está vacío. Escribir casos de la línea actual: `estratos fijos`, compromiso, recursos, países del panel, aviso de 2018, preguntas de metodología y, ya con modelos, coeficientes, unidades y fiabilidad.
+- [ ] Evaluador: 16 casos en `evaluador/reference_test.py` (perfiles y Australia, y conclusiones de la memoria) y notebook `evaluador/evaluator.ipynb`, que ejecuta la batería, la guarda en `evaluador/resultados/` y compara ejecuciones. Falta lanzar la batería completa y revisar los fallos.
 - [x] `README_ARQUITECTURA.md` actualizado: etapas, qué hace cada herramienta y cuándo se llama, temas de metodología, tokens y la traducción de la entrega (sección 9, que sustituye a `ADAPTACION_MODELOS.md`).
 - [x] `app.py` probado con las herramientas nuevas (`AppTest`, 2026-11-02): arranca sin errores y el waterfall llega al panel. No necesita más cambios.
 - [x] Despliegue en Streamlit Cloud (pasos en `README_ARQUITECTURA.md`, sección 7).

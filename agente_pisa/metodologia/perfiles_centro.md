@@ -40,7 +40,7 @@ Combinando las tres salen 18 perfiles (3 tipos × 2 ubicaciones × 3 tamaños), 
 
 ## Cautela: el privado urbano grande depende de Australia
 - En los 12 países del estudio, el privado urbano grande está formado sobre todo por centros australianos: 63 de
-  unos 110 centros en 2012 y 80 de unos 115 en 2022. Los demás son de España, Corea y Reino Unido (Corea pasa de 21
+  107 centros en 2012 y 80 de 114 en 2022. Los demás son de España, Corea y Reino Unido (Corea pasa de 21
   centros en 2012 a 4 en 2022, así que la mezcla de países cambia entre ediciones).
 - El modelo compara alumnos dentro de su propio país. Por eso, cuando un perfil es casi todo de un país, su
   coeficiente refleja sobre todo lo que pasa en ese país.

@@ -307,7 +307,7 @@ def ejecutar_agente(pregunta: str, estado) -> dict:
 # ==========================================================
 #  MAQUETACIÓN
 # ==========================================================
-st.title("EStudio PISA")
+st.title("Estudio PISA")
 st.caption(" PISA 2012-2022: exploración por estratos fijos y agente analítico")
 
 col_chat, col_panel = st.columns([5, 7], gap="large")

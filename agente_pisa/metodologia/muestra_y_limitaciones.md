@@ -10,7 +10,7 @@
   ITA (Italia), KOR (Corea), POL (Polonia), SVK (Eslovaquia) y SVN (Eslovenia).
 - Son los únicos países con perfil de centro y con datos de los tres componentes del compromiso en las cuatro
   ediciones. Otros 13 países se quedan fuera solo porque no pasaron en 2018 el cuestionario opcional de deberes
-  (entre ellos Alemania, Francia, Japón, Países Bajos, Portugal y Estados Unidos), y otros 7 porque les falta el
+  (entre ellos Alemania, Francia, Japón, Países Bajos, Portugal y Estados Unidos), y otros 8 porque les falta el
   perfil de centro en alguna edición.
 - Con los mismos países en todas las ediciones, las diferencias entre años no se deben a que entren o salgan países.
 - Como comprobación, el índice de compromiso también se calculó para 25 países sin la edición 2018. En los alumnos
