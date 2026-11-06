@@ -2,17 +2,9 @@
 
 Agente analítico del TFM sobre la nota en matemáticas de PISA 2012-2022 en los 12 países del panel común (AUS, DNK, ESP, GBR, GRC, HUN, ISL, ITA, KOR, POL, SVK y SVN). Sirve para entender el proyecto y analizar sus resultados: calcula estadísticas descriptivas, explica las decisiones metodológicas y consulta los resultados de la regresión y del XGBoost. Combina una interfaz de exploración manual con un chat con un agente LangGraph que usa modelos de Groq con herramientas (*Tool Calling*).
 
-## 1. Estado actual: por etapas
 
-| Etapa | Contenido | Estado |
-|---|---|---|
-| 1 | Interfaz, agente y estadísticas descriptivas sobre `data/processed/tabla_modelo_alumno.parquet`, galería de gráficos y notas de metodología | Hecha |
-| 2 | Vía de modelos: regresión (coeficientes, diferencias entre perfiles, simulación) y XGBoost (importancia, contribución con waterfall y forma de la relación) | Hecha |
-| 3 | Gráficos definitivos, marco teórico, evaluador y limpieza | Pendiente |
 
-El despliegue en Streamlit Cloud ya está hecho. Lo que falta está en `REQUISITOS_PENDIENTES.md`.
-
-## 2. Estructura de ficheros
+## 1. Estructura de ficheros
 
 ```
 agente_pisa/
@@ -26,7 +18,6 @@ agente_pisa/
 ├── system_prompt.md          Instrucciones del agente (en inglés, respuestas en español)
 ├── metodologia/              Notas de metodología, una por tema (ver sección 5)
 ├── requirements.txt          Dependencias mínimas para Streamlit Cloud
-├── agente_pisa.ipynb         Banco de pruebas manuales y Gradio
 ├── evaluador/                Juez LLM, 16 casos de referencia y notebook de evaluación (evaluator.ipynb)
 ├── artefactos/               Datos que consume la app (se suben a git)
 │   ├── alumnos_modelo.parquet       Alumnos en_modelo (298.782), legibles, con la nota de matemáticas
@@ -36,11 +27,10 @@ agente_pisa/
 │   ├── conductas_compromiso.csv     Coeficiente de cada conducta del compromiso (2012 y 2022), de data/processed/resultados_robustez.parquet
 │   ├── catalogo_graficos.csv        Los 33 gráficos que el agente y la galería pueden mostrar, con su descripción
 │   └── img/                         PNG copiados de reports/ (análisis exploratorio y modelado)
-├── README_ARQUITECTURA.md    Este documento
-└── REQUISITOS_PENDIENTES.md  Checklist de lo que falta
+└── README_ARQUITECTURA.md    Este documento
 ```
 
-## 3. Cómo se conectan los ficheros
+## 2. Cómo se conectan los ficheros
 
 ```
 data/processed/tabla_modelo_alumno.parquet + models/ (resultados del modelado) + reports/ (PNG)
@@ -55,13 +45,12 @@ herramientas.py  ◄── metodologia/*.md  (get_methodology)
 agente.py  (LangGraph: asistente <-> herramientas, con system_prompt.md)
         │
         ├──► app.py              (Streamlit: chat + panel visual)
-        ├──► agente_pisa.ipynb   (pruebas manuales y Gradio)
         └──► evaluador/          (batería de evaluación)
 ```
 
 `config.py` lo importan todos los módulos. Las herramientas devuelven JSON. La app lee esos resultados en los mensajes de herramienta para mostrar imágenes (clave `imagen`: gráficos del catálogo y waterfalls) y para dibujar gráficas de las estadísticas (salidas de `get_math_stats`), sin que el LLM tenga que repetir nada.
 
-## 4. Decisiones de arquitectura
+## 3. Decisiones de arquitectura
 
 💡 **Datos de alumno legibles y sin codificar.** `alumnos_modelo.parquet` son los alumnos que entran en el modelo (`en_modelo`), con las variables en sus unidades originales, la nota de matemáticas (media de los valores plausibles) y los `estratos fijos` desglosados en tipo, ubicación y tamaño del centro. Las herramientas filtran con los mismos valores con los que pregunta el usuario («privados», «rurales», «chicas»).
 
@@ -93,11 +82,9 @@ agente.py  (LangGraph: asistente <-> herramientas, con system_prompt.md)
 - las gráficas de las respuestas las dibuja la app a partir del JSON, sin pedírselas al LLM;
 - la exploración manual y la galería se calculan con Python puro y consumen 0 tokens.
 
-(Tokens medidos con el codificador `o200k_base`, el de `gpt-oss`, y comprobados con el uso que devuelve Groq.)
 
 💡 **Límite de cuota (429) con reintentos y respaldo.** `ChatGroq` se crea con `max_retries=0` y la llamada se envuelve con `tenacity` (`@retry` con backoff exponencial de 2 a 10 s, 2 intentos por modelo). Si el modelo sigue sin cuota, `invocar_con_respaldo` salta al siguiente modelo validado.
 
-💡 **Credenciales.** `obtener_api_key()` lee `st.secrets["GROQ_API_KEY"]` en Streamlit Cloud y, si no existe, `agente_pisa/.env` en local. Ambos ficheros de secretos están en `.gitignore`.
 
 ## 5. Herramientas: qué hace cada una y cuándo se llama
 
@@ -113,7 +100,7 @@ El agente elige las herramientas leyendo su descripción (el *docstring*) y el e
 | | `get_xgboost_patterns` | Patrones del XGBoost a partir de los SHAP de cada alumno (ver abajo) | Qué mueve más la predicción, por qué un grupo saca más o menos y la forma de una relación |
 
 
-**Temas de `get_methodology`** (uno por fichero; añadir un `.md` basta para que el agente lo vea):
+**Temas de `get_methodology`** (uno por fichero):
 
 | Tema | Contenido |
 |---|---|

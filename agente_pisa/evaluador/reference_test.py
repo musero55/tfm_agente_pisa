@@ -11,10 +11,7 @@ Cifras de agente_pisa/artefactos (coeficientes_regresion.csv, conductas_compromi
 alumnos_modelo.parquet), agente_pisa/metodologia y data/processed/resultados_robustez.parquet.
 """
 
-# Privado urbano grande y Australia (incidencia del 2026-11-02, ver
-# reports/resumenes/incidencia_agente_perfiles_australia.md). Hay dos cifras distintas que el agente confundía:
-# la diferencia de nota del perfil (+10) y la subida del coeficiente de los recursos dentro del perfil, que es la
-# que depende de Australia.
+
 CASOS_PERFILES_AUSTRALIA = [
     {
         "id": "perfiles_diferencias_2022",
@@ -139,8 +136,7 @@ CASOS_PERFILES_AUSTRALIA = [
     },
 ]
 
-# Conclusiones de la memoria (manuals/Memoria_TFM_20261105.pdf): H1-H4, XGBoost y metodología. Solo temas que el
-# agente puede consultar; cuando la memoria y los artefactos difieren en una cifra, va la de los artefactos.
+
 CASOS_MEMORIA = [
     {
         "id": "compromiso_vs_recursos",

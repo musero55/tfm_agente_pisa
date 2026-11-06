@@ -1,7 +1,7 @@
 """
 Agente LangGraph del proyecto PISA (Groq + Tool Calling).
 
-Lo importan tanto app.py (Streamlit) como agente_pisa.ipynb (pruebas manuales y Gradio) y el evaluador.
+Lo importan app.py (Streamlit) y el evaluador.
 
     from agente import construir_agente, listar_modelos_groq
     agente = construir_agente()
