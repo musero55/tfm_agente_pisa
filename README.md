@@ -19,8 +19,54 @@
    .venv/Scripts/python -m ipykernel install --user --name tfm_env --display-name tfm_env
    ```
    En Linux o macOS la ruta es `.venv/bin/python`. Desde VS Code o Jupyter, el kernel que hay que elegir es `tfm_env`.
-3. **Datos de PISA.** Los microdatos no están en git, porque pesan demasiado. Se descargan de la carpeta compartida y se guardan en `data/raw/<año>/`, con los ficheros de alumnos y de centros de cada edición. 2012 viene como `.txt` + `.sas` y se convierte antes con `src/pisa_txt_a_sav.py`. También van en `data/raw/` `escs_trend.csv` (índices reescalados de la OCDE) y los resultados publicados (`pisa_*_2000_2022.csv`).
-4. **Ejecutar los notebooks en orden** (siguiente sección). Cada uno lee las tablas que guardan los anteriores.
+3. **Datos de partida.** La carpeta `data/raw/` no se entrega, porque pesa más de 10 GB. Hay que descargarla de la OCDE (siguiente sección).
+4. **Ejecutar los notebooks en orden** (sección «Orden de los notebooks»). Cada uno lee las tablas que guardan los anteriores.
+
+---
+
+## Datos de partida: descarga de `data/raw/`
+
+Los microdatos de PISA son públicos y se descargan gratis de la web de la OCDE. En cada página de edición, el botón «Download the datasets» lleva a un formulario breve de la OCDE y, tras rellenarlo, a la descarga de los ficheros:
+
+* [PISA 2012](https://www.oecd.org/en/data/datasets/pisa-2012-database.html)
+* [PISA 2015](https://www.oecd.org/en/data/datasets/pisa-2015-database.html)
+* [PISA 2018](https://www.oecd.org/en/data/datasets/pisa-2018-database.html)
+* [PISA 2022](https://www.oecd.org/en/data/datasets/pisa-2022-database.html)
+
+De cada edición hacen falta dos ficheros, el **cuestionario del alumno** (que incluye las notas) y el **cuestionario del centro**, en formato SAS (2012 se convierte antes, ver abajo). Se guardan así:
+
+| Edición | Ficheros | Carpeta |
+|---|---|---|
+| 2012 | `INT_STU12_DEC03.sav` y `INT_SCQ12_DEC03.sav` | `data/raw/2012/` |
+| 2015 | `cy6_ms_cmb_stu_qqq.sas7bdat` y `cy6_ms_cmb_sch_qqq.sas7bdat` | `data/raw/2015/` |
+| 2018 | `cy07_msu_stu_qqq.sas7bdat` y `cy07_msu_sch_qqq.sas7bdat` | `data/raw/2018/` |
+| 2022 | `CY08MSP_STU_QQQ.SAS7BDAT` y `CY08MSP_SCH_QQQ.SAS7BDAT` | `data/raw/2022/` |
+
+El pipeline busca en cada carpeta el único `.sas7bdat` o `.sav` cuyo nombre contiene una parte fija (`stu12` y `scq12` en 2012; `stu_qqq` y `sch_qqq` en las demás), sin distinguir mayúsculas, así que vale con no cambiar el nombre original.
+
+**2012 se convierte antes.** La OCDE da los datos de 2012 como texto de ancho fijo (`.txt`), comprimido en `INT_STU12_DEC03.zip` y `INT_SCQ12_DEC03.zip`, con un script SAS por fichero que describe las columnas (`PISA2012_SAS_student.sas` y `PISA2012_SAS_school.sas`). Esos cuatro ficheros (los `.zip`, o los `.txt` ya descomprimidos, y los dos `.sas`) se dejan en `data/raw/2012/` y, desde la raíz del proyecto, se ejecuta:
+
+```bash
+.venv/Scripts/python -m src.pisa_txt_a_sav
+```
+
+`convertir_txt_a_sav` busca los ficheros en `data/raw/2012/` y, para alumnos y para centros por separado:
+
+* si el `.sav` ya existe, avisa de que no hace falta hacer nada;
+* si están los originales, genera el `.sav` y después los borra;
+* si faltan, lanza un aviso con los que hay que descargar.
+
+Además, en la raíz de `data/raw/`:
+
+* **`escs_trend.csv`**: índices socioeconómicos reescalados por la OCDE para comparar ediciones. Está en la página de PISA 2022, apartado «Rescaled indices for trend analyses» ([`escs_trend.zip`](https://webfs.oecd.org/pisa2022/escs_trend.zip)); se descomprime en `data/raw/`.
+* **`pisa_mathematics_2000_2022.csv`, `pisa_reading_2000_2022.csv` y `pisa_science_2000_2022.csv`**: medias por país publicadas por la OCDE. Solo las usa la sección 1 de `01_EDA_notas_asignatura`.
+
+No hace falta descargar nada más:
+
+* **`data/raw/datos_anuales/`** (las tablas maestras) la genera el primer notebook, `00_pipeline_multiedicion_PISA`.
+* **`data/raw/externos/`** (Gini, gasto educativo y datos macroeconómicos) la descargan solos `01_EDA_equidad` y los notebooks del anexo, desde las APIs públicas de la OCDE, el Banco Mundial y Eurostat (`src/datos_externos.py`).
+
+**Qué se puede ejecutar sin `data/raw/`.** Las tablas intermedias (`data/intermediate/`), la tabla del modelo (`data/processed/`) y los resultados (`models/`) sí se entregan. Con ellas se ejecutan `03_regresion_por_edicion` y `03_xgboost_shap`, y funciona el agente. Los notebooks de la fase 1, `02_preparacion_modelo`, `03_errores_brr` y `03_robustez_regresion` leen las tablas maestras de `data/raw/datos_anuales/` y necesitan haber descargado los microdatos.
 
 ---
 
@@ -53,7 +99,7 @@ Los notebooks tienen una estructura común: una cabecera con la pregunta que res
 ```text
 tfm_data_science/
 ├── data/
-│   ├── raw/            # Microdatos y ficheros originales (fuera de git)
+│   ├── raw/            # Microdatos y ficheros originales (no se entregan; ver «Datos de partida»)
 │   ├── intermediate/   # Tablas intermedias de los EDA (.parquet); ver data/intermediate/README.md
 │   └── processed/      # Tabla del modelo, parámetros de escala, diccionario y resultados de robustez
 ├── notebooks/
@@ -65,7 +111,6 @@ tfm_data_science/
 ├── reports/            # Figuras que guardan los notebooks
 ├── agente_pisa/        # Agente conversacional que responde preguntas sobre los resultados
 ├── anexo/              # Trabajo previo que se conserva: bloque exploratorio de 33 países y primer modelo por estrato
-├── obsoleto/           # Ficheros apartados, pendientes de revisar antes de borrarlos
 └── requirements.txt
 ```
 

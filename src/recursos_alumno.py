@@ -9,19 +9,14 @@ de las preguntas de posesiones del cuestionario del alumno (las que componen `HO
     * `leer_items_hogar`: ítems armonizados de una edición, una fila por alumno, con sus claves y pesos.
     * `SUBINDICES` / `construir_subindices`: subíndices por suma de ítems (recursos de estudio, riqueza
       del hogar y libros en casa), con un mínimo de ítems respondidos (`RESPUESTAS_MINIMAS`).
-    * `alfa_cronbach`: coherencia interna de los ítems de un subíndice.
-    * `calibrar_rasch` / `puntuacion_eap`: comprobación con IRT (modelo de Rasch): dificultad de cada ítem y
-      puntuación de cada alumno según los ítems que respondió.
 
 Los datos se leen de las tablas maestras (`data/raw/datos_anuales/`, ver `pisa_pipeline.py`).
 """
 
 from __future__ import annotations
 
-import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
-from girth import INVALID_RESPONSE, rasch_mml
 
 from src.pisa_pipeline import CLAVES_ALUMNO, rutas_datos_anuales
 
@@ -103,53 +98,3 @@ def construir_subindices(datos: pd.DataFrame) -> pd.DataFrame:
         minimo = RESPUESTAS_MINIMAS.get(subindice, len(items))
         datos[subindice] = (respuestas.mean(axis=1) * len(items)).where(respuestas.notna().sum(axis=1) >= minimo)
     return datos
-
-
-def alfa_cronbach(datos: pd.DataFrame, items: list[str], peso_col: str | None = None) -> float:
-    """Alfa de Cronbach de `items` sobre los alumnos que los tienen todos: k/(k-1) por (1 - suma de las
-    varianzas de cada ítem / varianza de la suma). Con ítems de sí/no equivale al KR-20."""
-    completos = datos.dropna(subset=items)
-    pesos = completos[peso_col].to_numpy() if peso_col else np.ones(len(completos))
-
-    def varianza(valores):
-        """Varianza de `valores` ponderada con los pesos de los alumnos completos."""
-        media = np.average(valores, weights=pesos)
-        return np.average((valores - media) ** 2, weights=pesos)
-
-    numero_items = len(items)
-    suma_varianzas = sum(varianza(completos[item].to_numpy()) for item in items)
-    return numero_items / (numero_items - 1) * (1 - suma_varianzas / varianza(completos[items].sum(axis=1).to_numpy()))
-
-
-def calibrar_rasch(datos: pd.DataFrame, items: list[str], peso_col: str = 'SENWT', alumnos: int = 40000, semilla: int = 42) -> pd.Series:
-    """Dificultad de cada ítem de `items` (de sí/no) con el modelo de Rasch: cuanto más negativa, más alumnos lo
-    tienen. Se estima con una muestra de `alumnos` sacada con probabilidad proporcional a `peso_col` (la librería
-    `girth` no admite pesos); los alumnos sin ningún ítem respondido no entran, y los vacíos cuentan como no
-    respondidos. Un ítem sin ninguna respuesta en `datos` (por ejemplo, una pregunta que un país no hizo) queda
-    vacío en lugar de estimarse."""
-    con_dato = [item for item in items if datos[item].notna().any()]
-    con_respuesta = datos[datos[con_dato].notna().any(axis=1)]
-    probabilidad = (con_respuesta[peso_col] / con_respuesta[peso_col].sum()).to_numpy()
-    muestra = con_respuesta.iloc[np.random.default_rng(semilla).choice(len(con_respuesta), size=alumnos, replace=True, p=probabilidad)]
-    respuestas = muestra[con_dato].to_numpy()
-    matriz = np.where(np.isnan(respuestas), INVALID_RESPONSE, respuestas).astype(int).T   # ítems x alumnos
-    return pd.Series(rasch_mml(matriz)['Difficulty'], index=con_dato).reindex(items)
-
-
-def puntuacion_eap(datos: pd.DataFrame, items: list[str], dificultades: pd.Series, minimo: int | None = None) -> pd.Series:
-    """Puntuación de cada alumno en el modelo de Rasch con las `dificultades` dadas: la media de su nivel según
-    los ítems que respondió (estimación EAP, con una distribución normal estándar de partida). Solo usa los ítems
-    respondidos, así que no hace falta prorratear; queda vacía si el alumno respondió menos de `minimo` ítems
-    (por defecto, ninguno)."""
-    niveles = np.linspace(-6, 6, 121)
-    probabilidad_si = 1 / (1 + np.exp(-(niveles[:, None] - dificultades[items].to_numpy()[None, :])))   # niveles x ítems
-    respuestas = np.nan_to_num(datos[items].to_numpy(), nan=-1)
-    patrones, patron_de_cada_alumno = np.unique(respuestas, axis=0, return_inverse=True)   # pocas combinaciones distintas
-    verosimilitud = np.ones((len(patrones), len(niveles)))
-    for posicion in range(len(items)):
-        verosimilitud[patrones[:, posicion] == 1] *= probabilidad_si[:, posicion]
-        verosimilitud[patrones[:, posicion] == 0] *= 1 - probabilidad_si[:, posicion]
-    posterior = verosimilitud * np.exp(-niveles ** 2 / 2)
-    puntuacion = pd.Series((posterior @ niveles / posterior.sum(axis=1))[patron_de_cada_alumno.ravel()], index=datos.index)
-    respondidos = datos[items].notna().sum(axis=1)
-    return puntuacion.where(respondidos >= (minimo if minimo is not None else 1))

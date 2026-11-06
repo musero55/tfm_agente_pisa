@@ -2,7 +2,7 @@
 
 Tablas que guardan los notebooks de `notebooks/fase_1_data_ingestion_eda/` y que lee el análisis, casi todas a través de `src/tabla_alumno.py` (`tabla_por_alumno`). Las tablas maestras por edición no están aquí, sino en `data/raw/datos_anuales/` (las genera `00_pipeline_multiedicion_PISA`).
 
-Las tablas del bloque exploratorio y del primer modelo por estrato están en `anexo/`, y las que ya no usa nadie, en `obsoleto/`.
+Las tablas del bloque exploratorio y del primer modelo por estrato están en `anexo/`.
 
 | Carpeta o fichero | La genera | Contenido | La lee |
 |---|---|---|---|

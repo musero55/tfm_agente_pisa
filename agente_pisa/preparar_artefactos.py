@@ -233,10 +233,6 @@ GRAFICOS_RECURSOS_ALUMNO = [
 
     # ("recursos_alumno_indices_centro", "01_recursos_alumno_indices_centro.png",
     #  "Porcentaje de alumnos con dato en apoyo del profesor (TEACHSUP) y TIC del centro (ICTSCH), por país y edición"),
-    # ("recursos_alumno_irt_dificultades", "01_recursos_alumno_irt_dificultades.png",
-    #  "Dificultad relativa de cada ítem de recursos de estudio por edición (modelo de Rasch)"),
-    # ("recursos_alumno_irt_paises", "01_recursos_alumno_irt_paises.png",
-    #  "Funcionamiento diferencial de cada ítem de recursos de estudio por país"),
 ]
 
 COLUMNAS = ["CNT", "CNTSCHID", "CNTSTUID", "year", "perfil", "SENWT", "W_FSTUWT", "sexo_femenino", "inmigrante",

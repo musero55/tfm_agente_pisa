@@ -37,7 +37,6 @@ filelock==4.0.12
 fonttools==4.63.0
 fqdn==1.6.0
 fsspec==2026.9.0
-girth==0.8.0
 gradio==6.29.1
 gradio_client==2.7.2
 groovy==0.1.2

@@ -7,20 +7,33 @@ con las posiciones) a un `.sav` que `pisa_pipeline.py` sabe leer. Del `.sas` se
 extraen posiciones, tipos, etiquetas y códigos de no-respuesta; estos últimos
 pasan a NaN, como hace pyreadstat con los missings de SAS en 2015-2022.
 
-Uso:
-    from src.pisa_txt_a_sav import convertir_txt_a_sav
-    convertir_txt_a_sav('INT_STU12_DEC03.txt', 'PISA2012_SAS_student.sas',
-                        'data/raw/2012/INT_STU12_DEC03.sav')
+Uso: se dejan en `data/raw/2012/` los ficheros que da la OCDE (los `.zip` o los `.txt` ya
+descomprimidos, y los dos `.sas`) y, desde la raíz del proyecto:
+    python -m src.pisa_txt_a_sav
+`convertir_txt_a_sav` convierte cada fichero que falta y borra después sus originales. Si el `.sav`
+ya existe no hace nada; si faltan los originales, avisa de que hay que descargarlos (ver el README).
 """
 
 from __future__ import annotations
 
 import os
 import re
+import warnings
+import zipfile
 
 import numpy as np
 import pandas as pd
 import pyreadstat
+
+# Carpeta de 2012 dentro del proyecto, sea cual sea el directorio desde el que se ejecute
+CARPETA_2012 = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'raw', '2012')
+# Ficheros de 2012 que da la OCDE y el `.sav` que se genera con cada uno
+FICHEROS_2012 = {
+    'alumnos': {'txt': 'INT_STU12_DEC03.txt', 'zip': 'INT_STU12_DEC03.zip', 'sas': 'PISA2012_SAS_student.sas',
+                'sav': 'INT_STU12_DEC03.sav'},
+    'centros': {'txt': 'INT_SCQ12_DEC03.txt', 'zip': 'INT_SCQ12_DEC03.zip', 'sas': 'PISA2012_SAS_school.sas',
+                'sav': 'INT_SCQ12_DEC03.sav'},
+}
 
 
 def _bloque(lineas: list[str], inicio: int) -> tuple[list[str], int]:
@@ -178,29 +191,68 @@ def leer_ancho_fijo(ruta_txt: str, esquema: dict, chunk_filas: int = 50_000) -> 
     return pd.DataFrame(datos)
 
 
-def convertir_txt_a_sav(ruta_txt: str, ruta_sas: str, ruta_sav: str, chunk_filas: int = 50_000) -> pd.DataFrame:
-    """Convierte el `.txt` (+ su `.sas`) a `.sav` con etiquetas y devuelve el DataFrame."""
-    esquema = parsear_script_sas(ruta_sas)
-    print(f'{os.path.basename(ruta_sas)}: {len(esquema["columnas"])} columnas, '
-          f'{len(esquema["es_texto"])} de texto, {len(esquema["codigos_faltantes"])} con códigos de no-respuesta, '
-          f'{len(esquema["etiquetas_valor"])} con etiquetas de valor')
-    datos = leer_ancho_fijo(ruta_txt, esquema, chunk_filas)
-    print(f'  Leídas {len(datos):,} filas × {datos.shape[1]} columnas')
+def convertir_txt_a_sav(carpeta: str = CARPETA_2012, chunk_filas: int = 50_000) -> dict[str, str]:
+    """Genera en `carpeta` (por defecto `data/raw/2012/`) los `.sav` de 2012, de alumnos y de centros, a partir de
+    los ficheros de la OCDE que haya en ella (`FICHEROS_2012`), con etiquetas de columna y de valor, y borra esos
+    originales cuando el `.sav` está guardado. Para cada fichero:
 
-    etiquetas_col = [esquema['etiquetas'].get(columna.upper(), '')[:255] for columna in datos.columns]
+        * si su `.sav` ya existe, avisa de que no hace falta hacer nada;
+        * si están el `.txt` (o su `.zip`, que se descomprime antes) y el `.sas`, lo convierte;
+        * si falta alguno, lanza un aviso con lo que hay que descargar.
 
-    etiquetas_valor = {}
-    for nombre, mapa in esquema['etiquetas_valor'].items():
-        if nombre not in datos.columns:
+    Devuelve el estado de cada fichero: 'ya estaba', 'convertido' o 'faltan los originales'."""
+    estados = {}
+    for nombre, ficheros in FICHEROS_2012.items():
+        ruta = {tipo: os.path.join(carpeta, fichero) for tipo, fichero in ficheros.items()}
+        if os.path.exists(ruta['sav']):
+            print(f'{ficheros["sav"]} ya está en {carpeta}: no hace falta hacer nada.')
+            estados[nombre] = 'ya estaba'
             continue
-        if nombre in esquema['es_texto']:
-            validas = {k: v[:120] for k, v in mapa.items() if isinstance(k, str) and len(k.encode('latin-1', 'replace')) <= 8}
-        else:
-            validas = {float(k): v[:120] for k, v in mapa.items() if not isinstance(k, str)}
-        if validas:
-            etiquetas_valor[nombre] = validas
+        # El `.txt` viene comprimido: si solo está el `.zip`, se descomprime en la misma carpeta
+        if not os.path.exists(ruta['txt']) and os.path.exists(ruta['zip']):
+            with zipfile.ZipFile(ruta['zip']) as comprimido:
+                comprimido.extract(ficheros['txt'], carpeta)
+        faltan = [ficheros[tipo] for tipo in ('txt', 'sas') if not os.path.exists(ruta[tipo])]
+        if faltan:
+            warnings.warn(f'Faltan los ficheros de {nombre} de PISA 2012 en {carpeta}: {", ".join(faltan)}. '
+                          'Hay que descargarlos de la OCDE y dejarlos en esa carpeta (ver el README, «Datos de partida»).',
+                          stacklevel=2)
+            estados[nombre] = 'faltan los originales'
+            continue
 
-    os.makedirs(os.path.dirname(os.path.abspath(ruta_sav)), exist_ok=True)
-    pyreadstat.write_sav(datos, ruta_sav, column_labels=etiquetas_col, variable_value_labels=etiquetas_valor)
-    print(f'  Guardado: {ruta_sav} ({os.path.getsize(ruta_sav) / 1e6:.0f} MB)')
-    return datos
+        esquema = parsear_script_sas(ruta['sas'])
+        print(f'{ficheros["sas"]}: {len(esquema["columnas"])} columnas, '
+              f'{len(esquema["es_texto"])} de texto, {len(esquema["codigos_faltantes"])} con códigos de no-respuesta, '
+              f'{len(esquema["etiquetas_valor"])} con etiquetas de valor')
+        datos = leer_ancho_fijo(ruta['txt'], esquema, chunk_filas)
+        print(f'  Leídas {len(datos):,} filas × {datos.shape[1]} columnas')
+
+        etiquetas_col = [esquema['etiquetas'].get(columna.upper(), '')[:255] for columna in datos.columns]
+        etiquetas_valor = {}
+        for variable, mapa in esquema['etiquetas_valor'].items():
+            if variable not in datos.columns:
+                continue
+            if variable in esquema['es_texto']:
+                validas = {k: v[:120] for k, v in mapa.items() if isinstance(k, str) and len(k.encode('latin-1', 'replace')) <= 8}
+            else:
+                validas = {float(k): v[:120] for k, v in mapa.items() if not isinstance(k, str)}
+            if validas:
+                etiquetas_valor[variable] = validas
+
+        # Se escribe con otro nombre y se renombra al final: si la conversión se corta, no queda un `.sav` a medias
+        ruta_parcial = f'{ruta["sav"]}.parcial'
+        pyreadstat.write_sav(datos, ruta_parcial, column_labels=etiquetas_col, variable_value_labels=etiquetas_valor)
+        os.replace(ruta_parcial, ruta['sav'])
+        print(f'  Guardado: {ruta["sav"]} ({os.path.getsize(ruta["sav"]) / 1e6:.0f} MB)')
+
+        # El `.sav` ya está guardado: los originales ya no hacen falta
+        for tipo in ('txt', 'zip', 'sas'):
+            if os.path.exists(ruta[tipo]):
+                os.remove(ruta[tipo])
+        print(f'  Borrados los originales de {nombre}.')
+        estados[nombre] = 'convertido'
+    return estados
+
+
+if __name__ == '__main__':
+    convertir_txt_a_sav()
