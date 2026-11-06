@@ -4,9 +4,9 @@ Agente analítico del TFM sobre la nota en matemáticas de PISA 2012-2022 en los
 
 ## 1. Puesta en marcha
 
-El agente no necesita los microdatos de PISA ni volver a entrenar nada: lee solo `artefactos/`, que se entrega ya generado. Todo se lanza desde la raíz del repositorio.
+El agente no necesita los microdatos de PISA ni volver a entrenar nada: lee solo `artefactos/`, que se entrega ya generado. Todo se lanza desde la raíz de esta entrega (la carpeta que contiene `agente_pisa/` y `requirements.txt`).
 
-1. **Entorno.** El mismo del resto del proyecto: el `.venv` creado con el `requirements.txt` de la raíz y registrado como kernel `tfm_env` (ver «Puesta en marcha» en el `README.md` principal). Incluye Streamlit, LangGraph, Groq y Jupyter.
+1. **Entorno.** Un `.venv` creado con el `requirements.txt` de la raíz y registrado como kernel `tfm_env` (ver «Puesta en marcha» en el `README.md`). Incluye Streamlit, LangGraph, Groq y lo necesario para el notebook de evaluación.
 2. **Clave de Groq.** Copiar `agente_pisa/.env.example` como `agente_pisa/.env` y poner la clave en `GROQ_API_KEY=` (se crea gratis en [console.groq.com/keys](https://console.groq.com/keys)).
 3. **App:**
    ```bash
@@ -15,11 +15,7 @@ El agente no necesita los microdatos de PISA ni volver a entrenar nada: lee solo
    Se abre en `http://localhost:8501`. En Linux o macOS la ruta es `.venv/bin/python`. El primer waterfall de cada sesión tarda unos 14 s porque importa `shap`; los siguientes, menos de medio segundo.
 4. **Evaluación:** abrir `agente_pisa/evaluador/evaluator.ipynb` con el kernel `tfm_env` y ejecutar todas las celdas. Pregunta los 16 casos de `reference_test.py` con una pausa de 80 s entre casos por la cuota gratuita de Groq, así que tarda unos 25 minutos. Cada ejecución se guarda en `evaluador/resultados/evaluacion_<fecha>_<hora>.csv`, y el notebook se entrega con los resultados de la última.
 
-`artefactos/` solo hay que regenerarlo si cambian los datos, los modelos o las figuras. Lee `data/processed/`, `models/` y `reports/`, que también se entregan:
-
-```bash
-.venv/Scripts/python agente_pisa/preparar_artefactos.py
-```
+`artefactos/` se generó con `preparar_artefactos.py` a partir de `data/processed/`, `models/` y `reports/`. Ese script y sus fuentes forman parte del proyecto completo (la otra entrega) y no hacen falta para ejecutar el agente.
 
 ## 2. Estructura de ficheros
 
@@ -31,11 +27,10 @@ agente_pisa/
 ├── datos.py                  Carga de artefactos con st.cache_data
 ├── graficos.py               Waterfall SHAP de un grupo de alumnos, dibujado en el momento
 ├── config.py                 Rutas, países, avisos, modelos de Groq y etiquetas legibles
-├── preparar_artefactos.py    Genera artefactos/ a partir de data/, models/ y reports/
 ├── system_prompt.md          Instrucciones del agente (en inglés, respuestas en español)
 ├── metodologia/              Notas de metodología, una por tema (ver sección 5)
 ├── .env.example              Plantilla del .env con la clave de Groq
-├── artefactos/               Datos que consume la app (se entregan ya generados)
+├── artefactos/               Datos que consume la app (se entregan ya generados con preparar_artefactos.py, del proyecto completo)
 │   ├── alumnos_modelo.parquet       Alumnos en_modelo (298.782), legibles, con la nota de matemáticas
 │   ├── coeficientes_regresion.csv   Regresión por edición, traducida al formato del agente (sección 8)
 │   ├── shap_alumnos.parquet         SHAP del XGBoost de cada alumno, medio entre valores plausibles
@@ -51,10 +46,10 @@ agente_pisa/
 ## 3. Cómo se conectan los ficheros
 
 ```
-data/processed/tabla_modelo_alumno.parquet + models/ (resultados del modelado) + reports/ (PNG)
+[proyecto completo] data/processed/tabla_modelo_alumno.parquet + models/ + reports/ (PNG)
         │
-        ▼  python agente_pisa/preparar_artefactos.py   (solo si cambian los datos o los modelos)
-artefactos/
+        ▼  preparar_artefactos.py   (en el proyecto completo; no se incluye en esta entrega)
+artefactos/   (se entrega ya generado)
         │
         ▼  datos.py  (lectura cacheada)
 herramientas.py  ◄── metodologia/*.md  (get_methodology)
@@ -76,7 +71,7 @@ agente.py  (LangGraph: asistente <-> herramientas, con system_prompt.md)
 
 **Ponderación con el peso de senado.** Todas las medias usan `SENWT`. Dentro de un país y edición es proporcional a `W_FSTUWT`, así que da la media representativa del país. En el panel cada país pesa casi lo mismo: el `SENWT` suma igual en cada país y edición con todos los alumnos de PISA, pero no todos entran en el modelo y cada país pierde una proporción distinta, así que pesa entre el 6 y el 12 % (en vez del 8,3 %). Darles exactamente el mismo peso cambiaría las medias menos de 1 punto. Se deja así porque es el mismo peso que usan la regresión y el XGBoost de `models/`, y las cifras del agente son coherentes con ellos.
 
-**Resultados de los modelos, no los  modelos.** Hay una regresión y un XGBoost por edición y por valor plausible (más de 40 modelos). La app no carga ninguno: lee tres tablas de resultados que se dejan en `models/` (formato en `models/README.md`). La regresión llega combinada con las reglas de Rubin y los SHAP, promediados entre valores plausibles. Así la app arranca rápido y no depende de la versión de XGBoost.
+**Resultados de los modelos, no los  modelos.** Hay una regresión y un XGBoost por edición y por valor plausible (más de 40 modelos). La app no carga ninguno: lee tres tablas de resultados que el modelado deja en `models/` del proyecto completo (formato en su `models/README.md`) y que se copian a `artefactos/`. La regresión llega combinada con las reglas de Rubin y los SHAP, promediados entre valores plausibles. Así la app arranca rápido y no depende de la versión de XGBoost.
 
 **La metodología, fuera del System Prompt.** Cómo se construye cada índice, por qué estos países, cómo se leen los modelos o qué resultados son frágiles está en `metodologia/`. `get_methodology` devuelve una nota solo cuando se pregunta por ella, y el System Prompt obliga a contestar con su texto, no con conocimiento general.
 
@@ -174,7 +169,7 @@ El marco teórico no va en el System Prompt, que se envía en cada llamada. Enca
 
 ## 8. Traducción de la entrega del modelado
 
-La tabla de la regresión de `models/` tiene un formato distinto del que usa el agente. `preparar_artefactos.py` la traduce sin tocar el original:
+La tabla de la regresión de `models/` (proyecto completo) tiene un formato distinto del que usa el agente. `preparar_artefactos.py` la tradujo al generar `artefactos/`, sin tocar el original:
 
 | `regresion` | `estrato` | De dónde sale |
 |---|---|---|

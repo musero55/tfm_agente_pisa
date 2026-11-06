@@ -22,7 +22,7 @@ if not st.runtime.exists():
 
 def _comprobar(ruta):
     if not ruta.exists():
-        raise FileNotFoundError(f"Falta el artefacto {ruta.name}. Ejecuta: python agente_pisa/preparar_artefactos.py")
+        raise FileNotFoundError(f"Falta el artefacto {ruta.name}. Se genera con preparar_artefactos.py, en el proyecto completo")
 
 
 @st.cache_data(show_spinner=False)

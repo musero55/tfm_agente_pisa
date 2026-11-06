@@ -1,8 +1,8 @@
 """
 Configuración central del agente PISA: rutas, constantes y catálogos.
 
-Todos los módulos (preparar_artefactos.py, datos.py, herramientas.py, agente.py y app.py)
-leen de aquí, de modo que cambiar una ruta o un modelo de Groq solo requiere tocar este fichero.
+Todos los módulos (datos.py, herramientas.py, agente.py y app.py) leen de aquí,
+de modo que cambiar una ruta o un modelo de Groq solo requiere tocar este fichero.
 """
 from pathlib import Path
 import tempfile
@@ -11,9 +11,8 @@ import tempfile
 #  RUTAS
 # ==========================================================
 DIR_AGENTE = Path(__file__).resolve().parent
-DIR_RAIZ = DIR_AGENTE.parent
 
-# Artefactos que consume el agente (los genera preparar_artefactos.py y se entregan ya generados)
+# Artefactos que consume el agente (se entregan ya generados; los produce preparar_artefactos.py en el proyecto completo)
 DIR_ARTEFACTOS = DIR_AGENTE / "artefactos"
 DIR_IMAGENES_MACRO = DIR_ARTEFACTOS / "img"
 
@@ -29,18 +28,6 @@ RUTA_CONDUCTAS = DIR_ARTEFACTOS / "conductas_compromiso.csv"       # regresión 
 
 # Imágenes generadas en vivo (waterfall del XGBoost): van a la carpeta temporal del sistema, no al proyecto.
 DIR_IMAGENES_TEMP = Path(tempfile.gettempdir()) / "pisa_plots"
-
-# Fuentes del proyecto que usa preparar_artefactos.py
-FUENTES = {
-    "tabla_modelo": DIR_RAIZ / "data" / "processed" / "tabla_modelo_alumno.parquet",
-    "reports": DIR_RAIZ / "reports",
-    # Resultados del modelado (formato en models/README.md; traducción en README_ARQUITECTURA.md)
-    "shap_alumnos": DIR_RAIZ / "models" / "shap_alumnos.parquet",
-    "coeficientes_regresion": DIR_RAIZ / "models" / "coeficientes_regresion.csv",
-    "metricas_modelos": DIR_RAIZ / "models" / "metricas_modelos.csv",
-    # Comprobaciones de robustez (03_robustez_regresion): de aquí sale la regresión con las conductas por separado
-    "resultados_robustez": DIR_RAIZ / "data" / "processed" / "resultados_robustez.parquet",
-}
 
 # ==========================================================
 #  DOMINIO PISA (línea principal del TFM)

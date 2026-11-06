@@ -1,31 +1,14 @@
+# GITIGNORE DEL AGENTE PISA
 
-# GITIGNORE PARA PROYECTO PISA
-
-# Datos y manuales (Se comparten por Drive/OneDrive, NO por GitHub)
-manuals/
-data/raw/*
-# Ficheros pequeños de data/raw que sí se entregan (los microdatos se descargan; ver el README)
-!data/raw/escs_trend.csv
-!data/raw/pisa_mathematics_2000_2022.csv
-!data/raw/pisa_reading_2000_2022.csv
-!data/raw/pisa_science_2000_2022.csv
-data/intermediate/datos_anuales_imputados/
+# Claves (no se entregan; ver agente_pisa/.env.example)
+.env
 agente_pisa/.env
 .streamlit/secrets.toml
 agente_pisa/.streamlit/secrets.toml
 
-#Datos temporales
+# Datos temporales
 .ipynb_checkpoints/
 __pycache__/
-
-# Resúmenes de los cuadernos (de uso personal)
-reports/resumenes/
-
-
-#Formatos 
-*.xlsx
-*.sav
-*.json
 
 # Archivos de configuración del sistema o del editor
 .DS_Store
@@ -33,7 +16,6 @@ reports/resumenes/
 Thumbs.db
 
 # Entornos virtuales
-.env
 .venv/
 env/
 venv/
