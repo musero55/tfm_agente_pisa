@@ -21,13 +21,13 @@ RUTA_ALUMNOS = DIR_ARTEFACTOS / "alumnos_modelo.parquet"          # alumnos en_m
 RUTA_CATALOGO_GRAFICOS = DIR_ARTEFACTOS / "catalogo_graficos.csv"
 # Metodología (cómo se construye cada índice, marco teórico...): un .md por tema, escrito a mano
 DIR_METODOLOGIA = DIR_AGENTE / "metodologia"
-# Etapa 2 (pendiente del modelado): resultados de la regresión y del XGBoost, sin los modelos
+# Resultados de la regresión y del XGBoost, sin los modelos
 RUTA_SHAP = DIR_ARTEFACTOS / "shap_alumnos.parquet"                # SHAP de cada alumno, medio entre valores plausibles
 RUTA_COEFICIENTES = DIR_ARTEFACTOS / "coeficientes_regresion.csv"  # regresión por edición, combinada con Rubin
 RUTA_METRICAS = DIR_ARTEFACTOS / "metricas_modelos.csv"            # R², RMSE y MAE por modelo y edición
 RUTA_CONDUCTAS = DIR_ARTEFACTOS / "conductas_compromiso.csv"       # regresión con las tres conductas del compromiso
 
-# Imágenes generadas en vivo (waterfall, etapa 2). En Streamlit Cloud el disco es efímero, por eso van a temp.
+# Imágenes generadas en vivo (waterfall del XGBoost). En Streamlit Cloud el disco es efímero, por eso van a temp.
 DIR_IMAGENES_TEMP = Path(tempfile.gettempdir()) / "pisa_plots"
 
 # Fuentes del proyecto que usa preparar_artefactos.py

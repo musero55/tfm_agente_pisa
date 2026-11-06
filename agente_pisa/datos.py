@@ -3,7 +3,7 @@ Carga de artefactos con la caché de Streamlit.
 
 - st.cache_data: tablas (Parquet / CSV). Cada llamada devuelve una copia, así que las herramientas pueden modificarlas.
 
-El agente no carga ningún modelo: de la etapa 2 solo lee sus resultados (SHAP por alumno, coeficientes y métricas).
+El agente no carga ningún modelo: solo lee sus resultados (SHAP por alumno, coeficientes y métricas).
 
 Fuera de `streamlit run` (notebook, evaluador) los decoradores siguen funcionando con una caché en memoria.
 """
@@ -40,7 +40,7 @@ def cargar_catalogo_graficos() -> pd.DataFrame:
     return catalogo[catalogo["ruta"].map(lambda r: (DIR_ARTEFACTOS / r).exists())].reset_index(drop=True)
 
 
-# Los resultados del modelado pueden llegar por separado: cada herramienta de la etapa 2 se activa con el suyo
+# Los resultados del modelado pueden llegar por separado: cada herramienta de los modelos se activa con el suyo
 def regresion_disponible() -> bool:
     return RUTA_COEFICIENTES.exists()
 

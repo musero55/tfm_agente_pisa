@@ -8,9 +8,9 @@ Agente analítico del TFM sobre la nota en matemáticas de PISA 2012-2022 en los
 |---|---|---|
 | 1 | Interfaz, agente y estadísticas descriptivas sobre `data/processed/tabla_modelo_alumno.parquet`, galería de gráficos y notas de metodología | Hecha |
 | 2 | Vía de modelos: regresión (coeficientes, diferencias entre perfiles, simulación) y XGBoost (importancia, contribución con waterfall y forma de la relación) | Hecha |
-| 3 | Gráficos definitivos, marco teórico, evaluador y limpieza | Pendiente |
+| 3 | Gráficos definitivos, marco teórico y evaluador | Pendiente |
 
-El despliegue en Streamlit Cloud ya está hecho. Lo que falta está en `REQUISITOS_PENDIENTES.md`.
+El despliegue en Streamlit Cloud ya está hecho.
 
 ## 2. Estructura de ficheros
 
@@ -26,7 +26,6 @@ agente_pisa/
 ├── system_prompt.md          Instrucciones del agente (en inglés, respuestas en español)
 ├── metodologia/              Notas de metodología, una por tema (ver sección 5)
 ├── requirements.txt          Dependencias mínimas para Streamlit Cloud
-├── agente_pisa.ipynb         Banco de pruebas manuales y Gradio
 ├── evaluador/                Juez LLM, 16 casos de referencia y notebook de evaluación (evaluator.ipynb)
 ├── artefactos/               Datos que consume la app (se suben a git)
 │   ├── alumnos_modelo.parquet       Alumnos en_modelo (298.782), legibles, con la nota de matemáticas
@@ -36,8 +35,7 @@ agente_pisa/
 │   ├── conductas_compromiso.csv     Coeficiente de cada conducta del compromiso (2012 y 2022), de data/processed/resultados_robustez.parquet
 │   ├── catalogo_graficos.csv        Los 35 gráficos que el agente y la galería pueden mostrar, con su descripción
 │   └── img/                         PNG copiados de reports/ (análisis exploratorio y modelado)
-├── README_ARQUITECTURA.md    Este documento
-└── REQUISITOS_PENDIENTES.md  Checklist de lo que falta
+└── README_ARQUITECTURA.md    Este documento
 ```
 
 ## 3. Cómo se conectan los ficheros
@@ -55,7 +53,6 @@ herramientas.py  ◄── metodologia/*.md  (get_methodology)
 agente.py  (LangGraph: asistente <-> herramientas, con system_prompt.md)
         │
         ├──► app.py              (Streamlit: chat + panel visual)
-        ├──► agente_pisa.ipynb   (pruebas manuales y Gradio)
         └──► evaluador/          (batería de evaluación)
 ```
 

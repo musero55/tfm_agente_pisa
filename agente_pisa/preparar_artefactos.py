@@ -30,22 +30,9 @@ from config import (
 # Gráficos de reports/ que se ofrecen como contexto.
 # Edita esta lista para añadir o quitar imágenes; la descripción es lo que lee el agente para elegirla.
 
-# Las de 33 países van comentadas: no coinciden con los datos del agente (12 países del panel).
-
 GRAFICOS_ESTRATOS = [
-    #No necesario
-    # ("estratos_sesgo_escs", "00_estratos_sesgo_sobrecontrol_escs_homepos.png",
-    #  "Relación entre el ESCS medio del centro y los recursos del hogar (HOMEPOS): por qué estratificar por ESCS provoca sobrecontrol (PISA 2022)"),
-
-    #Utiliza 33 paises- No se usa
-    # ("estratos_nulos_titularidad", "00_estratos_nulos_titularidad_financiacion_pais.png",
-    #  "Porcentaje de valores nulos por país en titularidad (SCHLTYPE) y financiación (PROPFUND), con el umbral de descarte del 50 % (PISA 2022)"),
-
-    #OK
     ("estratos_tamano_centros", "00_estratos_tamano_centros_titularidad_ubicacion.png",
      "Ejemplo de distribución del tamaño de los centros españoles por titularidad y ubicación, con los cortes pequeño / mediano / macro"),
-
-     #OK
     ("estratos_colegios_edicion", "00_estratos_colegios_por_estrato_edicion.png",
      "Número de colegios en cada estrato fijo (perfil de centro) y su comparación entre ediciones 2012-2022"),
 ]
@@ -53,104 +40,42 @@ GRAFICOS_ESTRATOS = [
 GRAFICOS_COMPROMISO = [
     ("compromiso_distribucion_2022", "01_compromiso_distribucion_indicadores_2022.png",
      "Distribución de los tres indicadores del índice de compromiso (horas de deberes, absentismo e impuntualidad) en PISA 2022"),
-
-    #No necesario
-    # ("compromiso_saturacion_deberes", "01_compromiso_saturacion_deberes_nota.png",
-    #  "Relación entre horas de deberes y nota de matemáticas a nivel alumno y a nivel centro por estrato: la nota se satura a partir de cierto tiempo"),
-
-    #Check
     ("compromiso_por_estrato_2022", "01_compromiso_indicadores_por_estrato_2022.png",
      "Horas de deberes, absentismo e impuntualidad por estrato de titularidad y ubicación (PISA 2022)"),
-
-    #Check
     ("compromiso_indicadores_2012", "01_compromiso_indicadores_2012.png",
      "Distribución de horas de deberes, absentismo e impuntualidad en PISA 2012"),
-
-    #No Necesario
-    # ("compromiso_validacion_outhours", "01_compromiso_validacion_outhours_2015.png",
-    #  "Validación metodológica de las horas de deberes en 2015: reconstrucción con 5 materias frente a 3 troncales contra OUTHOURS oficial"),
-
-    #Check
     ("compromiso_indicadores_2015", "01_compromiso_indicadores_2015.png",
      "Distribución de horas de deberes, absentismo e impuntualidad en PISA 2015"),
-
-    #Check
     ("compromiso_indicadores_2018", "01_compromiso_indicadores_2018.png",
      "Distribución de horas de deberes, absentismo e impuntualidad en PISA 2018 (edición con huecos en deberes)"),
-
-    #Check
     ("compromiso_disponibilidad", "01_compromiso_disponibilidad_pais_edicion.png",
      "Disponibilidad de cada variable del índice de compromiso por país y edición, y países que forman el panel común"),
-
-    #No Necesario
-    # ("compromiso_reescalado", "01_compromiso_reescalado_indice.png",
-    #  "Distribución del índice de compromiso equiponderado antes y después del reescalado final"),
-
-    #No Necesario
-    # ("compromiso_pca_vs_equiponderado", "01_compromiso_pca_vs_equiponderado.png",
-    #  "Peso de cada dimensión del índice de compromiso: PCA conjunto frente a índice equiponderado (panel común 2012-2022)"),
-
-    #Check
     ("compromiso_titularidad_ubicacion", "01_compromiso_indice_por_titularidad_ubicacion_2022.png",
      "Índice de compromiso y competencia por titularidad y ubicación del centro (PISA 2022)"),
-
-    #Check
     ("compromiso_espana_vs_panel", "01_compromiso_indice_alumno_espana_vs_panel_2022.png",
      "Reparto de alumnos por nivel del índice de compromiso y competencia: España frente al resto del panel (PISA 2022)"),
-
-    #Check
     ("compromiso_evolucion", "01_compromiso_evolucion_indice.png",
      "Evolución del índice de compromiso y competencia 2012-2022, global y por titularidad, en el panel común de países"),
 ]
 
 GRAFICOS_RECURSOS_CENTRO = [
-
-    #No necesaria (No se visualiza bien)
-    # ("recursos_centro_cobertura", "01_recursos_centro_cobertura.png",
-    #  "Porcentaje de centros con dato de cada recurso del centro, por país y edición"),
-
-    #No necesaria (demasiado pequeña)
-    # ("recursos_centro_correlaciones", "01_recursos_centro_correlaciones.png",
-    #  "Correlaciones entre los recursos del centro dentro de cada país y edición"),
-    
-    #Check
     ("recursos_centro_evolucion_pais", "01_recursos_centro_evolucion_pais.png",
      "Media de cada recurso del centro (alumnos por profesor, tamaño de clase, ordenadores...) por país y edición"),
-
-    #Check
     ("recursos_centro_reparto_varianza", "01_recursos_centro_reparto_varianza.png",
      "En qué nivel varían los recursos del centro: entre países, ediciones, perfiles de centro, centros y alumnos"),
-
-     #No Necesaria (?)
     ("recursos_centro_perfiles", "01_recursos_centro_perfiles.png",
      "Media de cada índice de recursos del centro por perfil de centro y edición"),
-
-    #Check
     ("recursos_centro_correlaciones_alumno", "01_recursos_centro_correlaciones_alumno.png",
      "Correlación de los recursos del centro con la composición social, el origen social, los recursos de estudio, el compromiso y la nota del alumno"),
-
-    #No necesaria(? No la entiendo)
     ("recursos_centro_asociacion_nota", "01_recursos_centro_asociacion_nota.png",
      "Puntos de matemáticas asociados a cada recurso del centro, dentro de cada país y edición, con y sin controles"),
-
-     #Check
     ("recursos_centro_escasez_2012", "01_recursos_centro_escasez_2012.png",
      "Índices de escasez de recursos del centro en 2012 y por qué no se comparan entre ediciones"),
 ]
 
 GRAFICOS_VARIABLES_MODELO = [
-
-    #No Usar, redundante con dos gráficas anteriores 
-    # ("universo_modelo", "01_variables_modelo_universo.png",
-    #  "Cobertura de los datos: alumnos con perfil de centro, con índice de compromiso y centros por perfil y edición"),
-
-    #Check
     ("variables_modelo_huecos", "01_variables_modelo_huecos.png",
      "Diferencia de nota entre los alumnos sin dato y con dato en cada variable del modelo, relativa a su país y edición"),
-     
-     #No Usar, poco clara
-    # ("variables_modelo_huecos_perfil", "01_variables_modelo_huecos_perfil.png",
-    #  "Porcentaje de alumnos sin dato y su diferencia de nota, por perfil de centro y edición"),
 ]
 
 # Modelado (notebooks/fase_3_modelado). Los gráficos de la regresión están en puntos por desviación típica; las
@@ -204,47 +129,23 @@ GRAFICOS_MODELADO = [
 
 # 01_EDA_recursos_alumno: cómo se forma el índice de recursos de estudio. Están calculados con los 33 países de la
 # OCDE de los datos, no con el panel de 12: la descripción lo dice para que el agente no los presente como del panel.
-# Los comentados son de comparación entre países o de validación y no se usan.
 GRAFICOS_RECURSOS_ALUMNO = [
-    #Check
     ("recursos_alumno_saturacion", "01_recursos_alumno_saturacion.png",
      "Recursos de estudio: porcentaje de alumnos que tiene cada objeto de estudio en casa, por edición, incluidos los "
      "que se dejan fuera del índice (escritorio y sitio tranquilo, sin dato en 2022; software educativo). Casi todos "
      "tienen la mayoría. 33 países de la OCDE, cada país pesa igual"),
-
-    #Check
     ("recursos_alumno_subindice_estudio", "01_recursos_alumno_subindice_estudio.png",
      "Índice de recursos de estudio: porcentaje de alumnos con 0 a 6 de los seis recursos (habitación, ordenador, "
      "internet, libros de ayuda, libros técnicos y diccionario), por edición; la mayoría tiene 5 o 6. 33 países de la "
      "OCDE, cada país pesa igual"),
-    # ("recursos_alumno_validacion", "01_recursos_alumno_validacion.png",
-    #  "Correlación de cada subíndice de recursos del hogar con los índices oficiales de la OCDE"),
-    # ("recursos_alumno_sin_subindice", "01_recursos_alumno_sin_subindice.png",
-    #  "Porcentaje de alumnos sin cada subíndice de recursos del hogar, por país y edición"),
-    # ("recursos_alumno_paises", "01_recursos_alumno_evolucion_pais.png",
-    #  "Media de recursos de estudio, riqueza del hogar y libros por país y edición"),
-
-    #Check
     ("recursos_alumno_reparto_varianza", "01_recursos_alumno_reparto_varianza.png",
      "Reparto de la varianza de los recursos de estudio, la riqueza del hogar, los libros, las notas y el nivel "
      "socioeconómico: entre países, ediciones, centros y alumnos; los recursos varían sobre todo entre alumnos del "
      "mismo centro (75 %). 33 países de la OCDE, 2012-2022"),
-
-    # ("recursos_alumno_correlaciones_nota", "01_recursos_alumno_correlaciones_nota.png",
-    #  "Correlaciones dentro de cada país entre recursos del hogar, origen social y notas, por edición"),
-
-    #Check
     ("recursos_alumno_nota", "01_recursos_alumno_asociacion_nota.png",
      "Asociación de los recursos de estudio, la riqueza del hogar y los libros con la nota dentro de cada país y "
      "edición, solos y con el origen social (puntos por desviación típica). Incluye lectura y ciencias, pero el "
      "estudio usa solo matemáticas. 33 países de la OCDE"),
-
-    # ("recursos_alumno_indices_centro", "01_recursos_alumno_indices_centro.png",
-    #  "Porcentaje de alumnos con dato en apoyo del profesor (TEACHSUP) y TIC del centro (ICTSCH), por país y edición"),
-    # ("recursos_alumno_irt_dificultades", "01_recursos_alumno_irt_dificultades.png",
-    #  "Dificultad relativa de cada ítem de recursos de estudio por edición (modelo de Rasch)"),
-    # ("recursos_alumno_irt_paises", "01_recursos_alumno_irt_paises.png",
-    #  "Funcionamiento diferencial de cada ítem de recursos de estudio por país"),
 ]
 
 COLUMNAS = ["CNT", "CNTSCHID", "CNTSTUID", "year", "perfil", "SENWT", "W_FSTUWT", "sexo_femenino", "inmigrante",
@@ -270,15 +171,14 @@ def preparar_alumnos() -> pd.DataFrame:
     alumnos["tamano"] = partes[2].map(TAMANOS)
     assert alumnos[["tipo_centro", "ubicacion", "tamano"]].notna().all().all(), "Perfil con códigos desconocidos"
 
-    # Niveles descriptivos de las variables de interés y de los controles del alumno, parece que l esta cogiendo de la tabla codificada (
-    # fijate en sexo y origen)
+    # Niveles descriptivos de las variables de interés y de los controles del alumno
     for columna, origen, (cortes, niveles) in [("nivel_compromiso", "Indice_Compromiso_Competencia", CORTES_COMPROMISO),
                                                ("nivel_recursos", "recursos_estudio", CORTES_RECURSOS)]:
         alumnos[columna] = pd.cut(alumnos[origen], bins=cortes, labels=niveles, right=False)
     alumnos["sexo"] = alumnos["sexo_femenino"].map({1.0: "Chica", 0.0: "Chico"})
     alumnos["origen"] = alumnos["inmigrante"].map({1.0: "Inmigrante", 0.0: "Nativo"})
 
-    #Deja las columnas con el tipo correcto
+    # Deja las columnas con el tipo correcto
     for columna in ["CNT", "perfil", "tipo_centro", "ubicacion", "tamano", "sexo", "origen"]:
         alumnos[columna] = alumnos[columna].astype("category")
     numericas = alumnos.select_dtypes("float64").columns
@@ -315,7 +215,7 @@ N_PERFILES = 15
 def _leer_resultado(clave: str, columnas: list[str]) -> pd.DataFrame | None:
     ruta = FUENTES[clave]
     if not ruta.exists():
-        print(f"Aviso: no existe models/{ruta.name} (pendiente del modelado); se omite.")
+        print(f"Aviso: no existe models/{ruta.name} ; se omite.")
         return None
     tabla = pd.read_parquet(ruta) if ruta.suffix == ".parquet" else pd.read_csv(ruta)
     faltan = [c for c in columnas if c not in tabla.columns]
@@ -429,7 +329,7 @@ def main():
         if imagen not in en_catalogo:
             imagen.unlink()
 
-    # Etapa 2: resultados del modelado, si ya existen
+    # Resultados del modelado, si existen
     shap = preparar_shap(alumnos)
     if shap is not None:
         shap.to_parquet(RUTA_SHAP, index=False)
