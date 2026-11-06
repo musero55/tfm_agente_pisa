@@ -119,7 +119,7 @@ GRAFICOS_MODELADO = [
      "XGBoost no reproduce el salto del privado urbano grande"),
 ]
 
-# 01_EDA_recursos_alumno: cómo se forma el índice de recursos de estudio. Están calculados con los 33 países de la
+# 01_EDA_indice_recursos_alumno: cómo se forma el índice de recursos de estudio. Están calculados con los 33 países de la
 # OCDE de los datos, no con el panel de 12: la descripción lo dice para que el agente no los presente como del panel.
 GRAFICOS_RECURSOS_ALUMNO = [
     ("recursos_alumno_saturacion", "01_recursos_alumno_saturacion.png",

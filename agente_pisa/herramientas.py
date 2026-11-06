@@ -89,7 +89,7 @@ SINONIMOS_VARIABLES = {
     "Indice_Compromiso_Competencia": ["compromiso", "indice", "indice de compromiso", "competencia", "engagement"],
     "recursos_estudio": ["recursos", "recursos de estudio", "recursos estudio"],
     "riqueza_hogar": ["riqueza", "riqueza del hogar", "wealth"],
-    "libros": ["libros", "libros en casa", "books"],
+    "cantidad_libros": ["libros", "libros en casa", "books"],
     "HISEI_TREND": ["hisei", "ocupacion", "ocupacion de los padres", "estatus"],
     "PAREDINT_TREND": ["paredint", "estudios de los padres", "estudios padres", "educacion padres"],
     "composicion_social_centro": ["composicion social", "composicion social del centro", "escs del centro"],
@@ -367,7 +367,7 @@ UNIDADES_REGRESION = {
     "HISEI_TREND": "puntos por cada punto más de ocupación de los padres (escala de 11 a 89)",
     "PAREDINT_TREND": "puntos por cada año más de estudios de los padres",
     "riqueza_hogar": "puntos por cada coche o baño más (de 0 a 6)",
-    "libros": "puntos por cada tramo más de libros en casa (de 1 a 6)",
+    "cantidad_libros": "puntos por cada tramo más de libros en casa (de 1 a 6)",
     "composicion_social_centro": "puntos por cada punto más del origen social medio del centro (≈ 2 desviaciones típicas)",
     "dotacion_centro": "puntos por cada punto más de dotación del centro (≈ 1 desviación típica)",
     "sexo_femenino": "puntos de las chicas frente a los chicos",
@@ -391,7 +391,7 @@ VARIABLES_POR_PERFIL = ("Indice_Compromiso_Competencia", "recursos_estudio")   #
 PERFIL_REFERENCIA = "PUB_URB_MED"
 # Valores mínimo y máximo de cada variable en los datos: una simulación no puede salirse de ellos
 RANGO = {"Indice_Compromiso_Competencia": (-2.1, 1.54), "recursos_estudio": (0, 6), "HISEI_TREND": (11, 89),
-         "PAREDINT_TREND": (3, 16), "riqueza_hogar": (0, 6), "libros": (1, 6), "composicion_social_centro": (-2.53, 1.2),
+         "PAREDINT_TREND": (3, 16), "riqueza_hogar": (0, 6), "cantidad_libros": (1, 6), "composicion_social_centro": (-2.53, 1.2),
          "dotacion_centro": (-4.32, 3.98), "sexo_femenino": (0, 1), "inmigrante": (0, 1)}
 # Resultados que no aguantan las comprobaciones de robustez (metodologia/robustez.md): se avisan en la propia salida
 # cuando la consulta incluye las ediciones indicadas. (variable, estrato) -> (ediciones, aviso)

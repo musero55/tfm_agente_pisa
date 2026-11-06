@@ -5,8 +5,8 @@ datos_externos.py
 Descarga y lectura de los datos externos de los 33 países OCDE: gasto educativo, personal,
 matrícula y estadísticas de referencia de la OCDE, Gini (OCDE y Banco Mundial), PIB per cápita e
 indicadores macroeconómicos del Banco Mundial y gasto público por alumno de Eurostat. Cada serie se
-guarda como CSV en `data/raw/externos/`. Las fuentes están descritas al principio del notebook
-`01_EDA_presupuestos.ipynb`; los indicadores macroeconómicos, en `01_EDA_factores_macroeconomicos.ipynb`.
+guarda como CSV en `data/raw/externos/`. La tabla país-edición de `01_EDA_equidad` (`presupuesto_pais_edicion.py`)
+usa las de la OCDE, el Gini y el PIB per cápita; los indicadores macroeconómicos y Eurostat se descargan pero no se usan.
 
 Las APIs son públicas y no necesitan clave. La de la OCDE (SDMX) tiene límite de
 consultas por hora, así que `descargar_todo` salta los ficheros que ya existen.
@@ -116,7 +116,7 @@ SERIES_OCDE = {
 }
 
 # Eurostat: gasto público por alumno (EUR, PPS, % del PIB per cápita), solo países de la UE. No entra en la
-# tabla de presupuesto (PPS corrientes, solo UE): `01_EDA_presupuestos.ipynb` solo mira su cobertura.
+# tabla país-edición (PPS corrientes, solo UE).
 EUROSTAT_GASTO_ALUMNO = 'educ_uoe_fine09'
 GEO_EUROSTAT = {'AUT': 'AT', 'BEL': 'BE', 'CZE': 'CZ', 'DEU': 'DE', 'DNK': 'DK', 'ESP': 'ES', 'EST': 'EE',
                 'FIN': 'FI', 'FRA': 'FR', 'GRC': 'EL', 'HUN': 'HU', 'IRL': 'IE', 'ITA': 'IT', 'NLD': 'NL',

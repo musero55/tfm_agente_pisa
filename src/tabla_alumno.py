@@ -17,8 +17,8 @@ que guardan los EDA:
     * `paises_edicion_sin_variable`: países-edición en los que una variable falta en todas las filas
       (pregunta no hecha); el resto de huecos de esa variable son sueltos.
 
-Orígenes: tablas maestras (`data/raw/datos_anuales/`), `01_EDA_recursos_alumno` (subíndices del hogar),
-`01_EDA_indice_de_compromiso_competencia` (índice de compromiso y competencia y horas de deberes, en
+Orígenes: tablas maestras (`data/raw/datos_anuales/`), `01_EDA_indice_recursos_alumno` (subíndices del hogar),
+`01_EDA_indice_compromiso` (índice de compromiso y competencia y horas de deberes, en
 `data/intermediate/compromiso_competencia/` y `compromiso_competencia_panel_ampliado/`), `01_EDA_equidad`
 (`ESCS` medio del centro y recursos del centro, de los que `src/recursos_centro.py` calcula los índices) y
 `00_Pipeline_generacion_estratos` (perfil de centro, `data/intermediate/estratos_fijos/`).
@@ -41,7 +41,7 @@ VALORES_PLAUSIBLES = {2012: 5, 2015: 10, 2018: 10, 2022: 10}   # todos los de ca
 ITEMS_ASISTENCIA = {2012: ['ST09Q01', 'ST115Q01', 'ST08Q01'],
                     **{edicion: ['ST062Q01TA', 'ST062Q02TA', 'ST062Q03TA'] for edicion in (2015, 2018, 2022)}}
 
-# Paneles de países: carpeta del índice de compromiso y competencia (`01_EDA_indice_de_compromiso_competencia`)
+# Paneles de países: carpeta del índice de compromiso y competencia (`01_EDA_indice_compromiso`)
 # y ediciones. El común reúne los 12 países con horas de deberes en las cuatro ediciones (en 2018 solo las
 # preguntan ellos); el ampliado, los 25 con datos en 2012, 2015 y 2022, para la comprobación de robustez. Cada
 # panel tiene su propio índice, con los terciles y la escala calculados con sus alumnos.
