@@ -19,7 +19,7 @@
    .venv/Scripts/python -m ipykernel install --user --name tfm_env --display-name tfm_env
    ```
    En Linux o macOS la ruta es `.venv/bin/python`. Desde VS Code o Jupyter, el kernel que hay que elegir es `tfm_env`.
-3. **Datos de partida.** La carpeta `data/raw/` no se entrega, porque pesa más de 10 GB. Hay que descargarla de la OCDE (siguiente sección).
+3. **Datos de partida.** Los microdatos de PISA no se entregan, porque pesan más de 10 GB. Hay que descargarlos de la OCDE y guardarlos en `data/raw/` (siguiente sección).
 4. **Ejecutar los notebooks en orden** (sección «Orden de los notebooks»). Cada uno lee las tablas que guardan los anteriores.
 
 ---
@@ -56,17 +56,13 @@ El pipeline busca en cada carpeta el único `.sas7bdat` o `.sav` cuyo nombre con
 * si están los originales, genera el `.sav` y después los borra;
 * si faltan, lanza un aviso con los que hay que descargar.
 
-Además, en la raíz de `data/raw/`:
-
-* **`escs_trend.csv`**: índices socioeconómicos reescalados por la OCDE para comparar ediciones. Está en la página de PISA 2022, apartado «Rescaled indices for trend analyses» ([`escs_trend.zip`](https://webfs.oecd.org/pisa2022/escs_trend.zip)); se descomprime en `data/raw/`.
-* **`pisa_mathematics_2000_2022.csv`, `pisa_reading_2000_2022.csv` y `pisa_science_2000_2022.csv`**: medias por país publicadas por la OCDE. Solo las usa la sección 1 de `01_EDA_notas_asignatura`.
-
 No hace falta descargar nada más:
 
+* **Ficheros que ya se entregan** en la raíz de `data/raw/`: `escs_trend.csv` (índices socioeconómicos reescalados por la OCDE para comparar ediciones) y `pisa_mathematics_2000_2022.csv`, `pisa_reading_2000_2022.csv` y `pisa_science_2000_2022.csv` (medias por país publicadas por la OCDE).
 * **`data/raw/datos_anuales/`** (las tablas maestras) la genera el primer notebook, `00_pipeline_multiedicion_PISA`.
-* **`data/raw/externos/`** (Gini, gasto educativo y datos macroeconómicos) la descargan solos `01_EDA_equidad` y los notebooks del anexo, desde las APIs públicas de la OCDE, el Banco Mundial y Eurostat (`src/datos_externos.py`).
+* **`data/raw/externos/`** (Gini, gasto educativo y datos macroeconómicos) la descarga sola `01_EDA_equidad`, desde las APIs públicas de la OCDE, el Banco Mundial y Eurostat (`src/datos_externos.py`).
 
-**Qué se puede ejecutar sin `data/raw/`.** Las tablas intermedias (`data/intermediate/`), la tabla del modelo (`data/processed/`) y los resultados (`models/`) sí se entregan. Con ellas se ejecutan `03_regresion_por_edicion` y `03_xgboost_shap`, y funciona el agente. Los notebooks de la fase 1, `02_preparacion_modelo`, `03_errores_brr` y `03_robustez_regresion` leen las tablas maestras de `data/raw/datos_anuales/` y necesitan haber descargado los microdatos.
+**Qué se puede ejecutar sin los microdatos.** Las tablas intermedias (`data/intermediate/`), la tabla del modelo (`data/processed/`) y los resultados (`models/`) sí se entregan. Con ellas se ejecutan `03_regresion_por_edicion` y `03_xgboost_shap`, y funciona el agente. Los notebooks de la fase 1, `02_preparacion_modelo`, `03_errores_brr` y `03_robustez_regresion` leen las tablas maestras de `data/raw/datos_anuales/` y necesitan haber descargado los microdatos.
 
 ---
 
@@ -80,9 +76,9 @@ Los notebooks están en `notebooks/`, por fases. Este es el orden de ejecución,
 | 2 | `fase_1_data_ingestion_eda/00_Pipeline_generacion_estratos` | Perfil fijo de cada centro: titularidad, ubicación y tamaño |
 | 3 | `fase_1_data_ingestion_eda/01_EDA_notas_asignatura` | Nota media por centro y por país; reparto de la varianza de la nota |
 | 4 | `fase_1_data_ingestion_eda/01_EDA_equidad` | Desigualdad social y de recursos; `ESCS` medio y recursos de cada centro |
-| 5 | `fase_1_data_ingestion_eda/01_EDA_recursos_alumno` | Subíndice de recursos de estudio del hogar |
-| 6 | `fase_1_data_ingestion_eda/01_EDA_indice_de_compromiso_competencia` | Índice de compromiso y panel de 12 países (y el ampliado de 25) |
-| 7 | `fase_1_data_ingestion_eda/01_EDA_recursos_centro` | Dotación y escasez del centro, que entran como controles |
+| 5 | `fase_1_data_ingestion_eda/01_EDA_indice_recursos_alumno` | Subíndice de recursos de estudio del hogar |
+| 6 | `fase_1_data_ingestion_eda/01_EDA_indice_compromiso` | Índice de compromiso y panel de 12 países (y el ampliado de 25) |
+| 7 | `fase_1_data_ingestion_eda/01_EDA_indice_recursos_centro` | Dotación y escasez del centro, que entran como controles |
 | 8 | `fase_1_data_ingestion_eda/01_EDA_variables_modelo` | Alumnos del panel y huecos de las variables del modelo |
 | 9 | `fase_2_feature_engineering/02_preparacion_modelo` | Tabla del modelo, en `data/processed/` |
 | 10 | `fase_3_modelado/03_regresion_por_edicion` | Modelo principal; guarda los coeficientes en `models/` |
@@ -110,7 +106,6 @@ tfm_data_science/
 ├── models/             # Resultados que lee el agente: coeficientes, SHAP y métricas (ver models/README.md)
 ├── reports/            # Figuras que guardan los notebooks
 ├── agente_pisa/        # Agente conversacional que responde preguntas sobre los resultados
-├── anexo/              # Trabajo previo que se conserva: bloque exploratorio de 33 países y primer modelo por estrato
 └── requirements.txt
 ```
 

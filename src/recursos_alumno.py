@@ -28,7 +28,7 @@ PESOS_ALUMNO = ['W_FSTUWT', 'SENWT']
 # 2022 la escala empieza en 1 = ningún libro y llega a 7. Hay alguno (tipos de libros): hasta 2018, sí/no;
 # en 2022 se pregunta cuántos libros hay de cada tipo (códigos 1 a 4, de menos a más, con 1 = ninguno) y
 # se convierte en 'tiene al menos uno'. El código 5 de 2022 se trata como 'no lo sé': sus alumnos tienen
-# un ESCS y un número de libros intermedios, no los más altos (sección 2 de 01_EDA_recursos_alumno).
+# un ESCS y un número de libros intermedios, no los más altos (sección 2 de 01_EDA_indice_recursos_alumno).
 SI_NO, CUANTOS, TRAMOS, HAY_ALGUNO = 'sí/no', 'cuántos', 'tramos', 'hay alguno'
 
 # {ítem: (tipo de respuesta, {edición: columna})}. Una edición que falta es una pregunta que no se hizo.

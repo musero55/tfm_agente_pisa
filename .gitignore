@@ -3,7 +3,12 @@
 
 # Datos y manuales (Se comparten por Drive/OneDrive, NO por GitHub)
 manuals/
-data/raw/
+data/raw/*
+# Ficheros pequeños de data/raw que sí se entregan (los microdatos se descargan; ver el README)
+!data/raw/escs_trend.csv
+!data/raw/pisa_mathematics_2000_2022.csv
+!data/raw/pisa_reading_2000_2022.csv
+!data/raw/pisa_science_2000_2022.csv
 data/intermediate/datos_anuales_imputados/
 agente_pisa/.env
 .streamlit/secrets.toml

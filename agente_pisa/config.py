@@ -89,7 +89,7 @@ VARIABLES_NUMERICAS = {
     "Indice_Compromiso_Competencia": "Índice de compromiso y competencia",
     "recursos_estudio": "Recursos de estudio del hogar",
     "riqueza_hogar": "Riqueza del hogar",
-    "libros": "Libros en casa",
+    "cantidad_libros": "Libros en casa",
     "HISEI_TREND": "Ocupación de los padres",
     "PAREDINT_TREND": "Años de estudios de los padres",
     "composicion_social_centro": "Composición social del centro",
