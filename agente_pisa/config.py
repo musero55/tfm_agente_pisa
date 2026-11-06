@@ -13,7 +13,7 @@ import tempfile
 DIR_AGENTE = Path(__file__).resolve().parent
 DIR_RAIZ = DIR_AGENTE.parent
 
-# Artefactos que consume el agente (los genera preparar_artefactos.py y se suben a git para Streamlit Cloud)
+# Artefactos que consume el agente (los genera preparar_artefactos.py y se entregan ya generados)
 DIR_ARTEFACTOS = DIR_AGENTE / "artefactos"
 DIR_IMAGENES_MACRO = DIR_ARTEFACTOS / "img"
 
@@ -27,7 +27,7 @@ RUTA_COEFICIENTES = DIR_ARTEFACTOS / "coeficientes_regresion.csv"  # regresión 
 RUTA_METRICAS = DIR_ARTEFACTOS / "metricas_modelos.csv"            # R², RMSE y MAE por modelo y edición
 RUTA_CONDUCTAS = DIR_ARTEFACTOS / "conductas_compromiso.csv"       # regresión con las tres conductas del compromiso
 
-# Imágenes generadas en vivo (waterfall del XGBoost). En Streamlit Cloud el disco es efímero, por eso van a temp.
+# Imágenes generadas en vivo (waterfall del XGBoost): van a la carpeta temporal del sistema, no al proyecto.
 DIR_IMAGENES_TEMP = Path(tempfile.gettempdir()) / "pisa_plots"
 
 # Fuentes del proyecto que usa preparar_artefactos.py
@@ -66,7 +66,6 @@ UBICACIONES = {"URB": "Urbano", "RUR": "Rural"}
 TAMANOS = {"PEQ": "Pequeño", "MED": "Mediano", "MACRO": "Grande"}
 
 # Niveles descriptivos de las variables de interés (cortes fijos, iguales en todas las ediciones)
-#TODO Cortes compromiso no seria hasta -1 , 1, infinito ?? Que es la desviación tipica del indice
 CORTES_COMPROMISO = ([-float("inf"), -1, 1, float("inf")], ["Bajo", "Medio", "Alto"])     # en DT del índice, como en el EDA
 CORTES_RECURSOS = ([-float("inf"), 4.5, 5.5, float("inf")], ["Hasta 4", "5 de 6", "Los 6"])    # recursos de estudio
 

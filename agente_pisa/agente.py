@@ -40,18 +40,10 @@ load_dotenv(find_dotenv(usecwd=True))
 
 #Carga de credenciales en el .env
 def obtener_api_key() -> str:
-    """st.secrets en Streamlit Cloud; .env (o variable de entorno) en local."""
-    try:
-        import streamlit as st
-        if "GROQ_API_KEY" in st.secrets:
-            return st.secrets["GROQ_API_KEY"]
-    except Exception:
-        pass   # sin secrets.toml o fuera de Streamlit
-    load_dotenv(DIR_AGENTE / ".env")          # agente_pisa/.env aunque se lance desde la raíz del repo
-    load_dotenv(find_dotenv(usecwd=True))
+    """Clave de Groq, leída de agente_pisa/.env (o de la variable de entorno GROQ_API_KEY)."""
     clave = os.getenv("GROQ_API_KEY")
     if not clave:
-        raise ValueError("Falta GROQ_API_KEY: añádela a .streamlit/secrets.toml (Cloud) o al fichero .env (local).")
+        raise ValueError("Falta GROQ_API_KEY: copia agente_pisa/.env.example como agente_pisa/.env y pon tu clave.")
     return clave
 
 
